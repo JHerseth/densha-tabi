@@ -86,9 +86,19 @@ test("✕ stays reachable while stamps are pressed (closing keeps what was press
   const root = openGame(w);
   w.wait(6000);
   assert.ok(root.classList.contains("dt-busy"));
-  root.find("dt-x")[0].click();
+  root.find("dt-arrx")[0].click();                 // the sheet's own ✕
   assert.equal(w.document.body.find("dt-root").length, 0);
   assert.equal(JSON.parse(stored[KEY]).queue.length, 1);
+});
+
+test("the top bar holds only coins and buttons; the stamp card's progress is on the week strip, which opens it", () => {
+  const w = card(seeded({ queue: [], card: { boxes: ["2026-10-12", "2026-10-13"], done: 0 } }), 5, { now });
+  const root = openGame(w);
+  assert.doesNotMatch(root.find("dt-top")[0].textContent, /📮/);
+  const week = root.find("dt-week")[0];
+  assert.match(week.innerHTML, /📮 <b>3<\/b>\/10/);
+  week.click();
+  assert.equal(root.find("dt-cardp").length, 1);
 });
 
 test("the lap is on the station sign, not in the top bar", () => {

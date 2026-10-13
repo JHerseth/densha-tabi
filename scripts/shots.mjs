@@ -46,7 +46,7 @@ const SCENES = [
   { name: "14-stamp-book", save: save({ station: 20, stamps: { 2: 2, 5: 3, 9: 4 } }), run: open + tap(".dt-tb"), wait: 700 },
   { name: "15-stamp-big", save: save({ station: 20, stamps: { 2: 2 } }), run: open + tap(".dt-tb") + "setTimeout(()=>document.querySelectorAll('.dt-cell')[2].click(),300);", wait: 1100 },
   { name: "16-route-map", save: save({ station: 20, step: 10 }), run: open + tap(".dt-tb") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);", wait: 900 },
-  { name: "17-stamp-card", save: save({ station: 20 }), run: open + tap(".dt-cardbtn"), wait: 700 },
+  { name: "17-stamp-card", save: save({ station: 20 }), run: open + tap(".dt-week"), wait: 700 },
   { name: "18-shop-models", save: Object.assign(save({ station: 20, coins: 75 }), { owned: { models: ["local"], colors: [], cars: 1, passengers: ["🐶", "🐱"] } }), run: open + tapText(".dt-tb", "おみせ"), wait: 700 },
   { name: "19-shop-colors", save: save({ station: 20 }), run: open + tapText(".dt-tb", "おみせ") + "setTimeout(()=>" + tapText(".dt-tab", "いろ").replace(/;$/, "") + ",200);", wait: 900 },
   { name: "20-shop-passengers", save: save({ station: 20 }), run: open + tapText(".dt-tb", "おみせ") + "setTimeout(()=>" + tapText(".dt-tab", "じょうきゃく").replace(/;$/, "") + ",200);", wait: 900 },
@@ -69,6 +69,31 @@ const SCENES = [
   { name: "30-garden-open", save: save({ station: 9 }), garden: true, card: true, run: "setTimeout(()=>document.querySelector('.kg-chip').click(),1600);", wait: 2600 },
   { name: "31-garden-dt-open", save: save({ station: 9 }), garden: true, card: true, run: "setTimeout(()=>document.querySelector('.dt-chip').click(),3200);", wait: 4200 },
 ];
+
+// Text zoom as Android's WebView applies it (system font size / AnkiDroid card zoom): every HTML element's font size
+// times Z, kept up as the page adds elements (an element that only inherits its size gets it from its parent).
+const TEXT_ZOOM = (z) => `(() => { const Z = ${z};
+  function scale(top) {
+    const els = [top, ...top.querySelectorAll("*")].filter((e) => e instanceof HTMLElement && !e.closest("svg") && !e.dataset.tz);
+    const sizes = els.map((e) => [e, parseFloat(getComputedStyle(e).fontSize), e.parentElement ? parseFloat(getComputedStyle(e.parentElement).fontSize) : 0]);
+    for (const [e, fs, pfs] of sizes) {
+      e.dataset.tz = 1;
+      if (e.parentElement && e.parentElement.dataset.tz && Math.abs(fs - pfs) < 0.01) continue;
+      e.style.setProperty("font-size", fs * Z + "px", "important");
+    }
+  }
+  const go = () => { scale(document.body); new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) scale(n); })))
+    .observe(document.documentElement, { childList: true, subtree: true }); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
+})();`;
+for (const [w, h] of [[412, 690], [360, 600], [393, 640]]) {
+  SCENES.push({ name: `z-${w}x${h}-main`, save: save({ station: 5, coins: 99999 }), dev: true, run: open, wait: 900, w, h, zoom: 1.3 });
+  SCENES.push({ name: `z-${w}x${h}-bubble`, save: save({ station: 7, step: 19, seg: 20, days: [1, 2, 3], boxes: [6, 5, 3, 2, 1, 7, 8, 9, 10] }), card: true, run: "", wait: 1700, w, h, zoom: 1.3 });
+  SCENES.push({ name: `z-${w}x${h}-stamp`, save: save({ station: 12, step: 0, coins: 99999, queue: [{ lap: 1, station: 12 }, { lap: 1, station: 13 }] }), dev: true, run: open, wait: 5400, w, h, zoom: 1.3 });
+}
+SCENES.push({ name: "z-740x360-landscape", save: save({ station: 22, coins: 99999, train: { model: "shin", cars: 2 } }), dev: true, run: open, wait: 900, w: 740, h: 360, zoom: 1.3 });
+SCENES.push({ name: "z-412x690-shop", save: save({ station: 20, coins: 99999 }), dev: true, run: open + "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);", wait: 900, w: 412, h: 690, zoom: 1.3 });
+SCENES.push({ name: "z-412x690-card", save: save({ station: 20 }), run: open + tap(".dt-week"), wait: 800, w: 412, h: 690, zoom: 1.3 });
 
 const only = process.argv.slice(2);
 const port = 9300 + Math.floor(Math.random() * 500);
@@ -93,6 +118,7 @@ for (const sc of SCENES) {
   if (only.length && !only.some((o) => sc.name.includes(o))) continue;
   await send("Emulation.setDeviceMetricsOverride", { width: sc.w || 360, height: sc.h || 740, deviceScaleFactor: 2, mobile: true });
   await send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  const zs = sc.zoom ? (await send("Page.addScriptToEvaluateOnNewDocument", { source: TEXT_ZOOM(sc.zoom) })).result.identifier : null;
   await send("Page.navigate", { url });
   await sleep(500);
   await evaluate(`localStorage.clear();` + (sc.save ? `localStorage.setItem("densha-tabi", ${JSON.stringify(JSON.stringify(sc.save))});` : ""));
@@ -103,6 +129,7 @@ for (const sc of SCENES) {
   await sleep(sc.wait);
   const shot = await send("Page.captureScreenshot", { format: "png" });
   writeFileSync(join(OUT, sc.name + ".png"), Buffer.from(shot.result.data, "base64"));
+  if (zs) await send("Page.removeScriptToEvaluateOnNewDocument", { identifier: zs });
   console.log("wrote", sc.name);
 }
 ws.close(); chr.kill();

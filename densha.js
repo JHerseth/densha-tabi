@@ -1244,28 +1244,27 @@
       root.classList.toggle("dt-mono", drawn(s.train) === "mono");
     }
 
-    // -- the top bar
+    // -- the UI over the scene: one flex column (top bar, sign, progress, room for the train, the week strip), so
+    // nothing can overlap whatever the text size (AnkiDroid scales text with the phone's font size and card zoom)
+    var ui = el("div", "dt-ui");
+    root.append(ui);
+    // -- the top bar: coins, then buttons
     var top = el("div", "dt-top"), stat = el("div", "dt-stat");
-    var coinsEl = el("span", "dt-coins"), cardBtn = el("button", "dt-cardbtn");
-    cardBtn.type = "button";
-    cardBtn.addEventListener("click", function (e) { e.stopPropagation(); openCard(); });
-    stat.append(coinsEl, el("i", "dt-sep"), cardBtn);
+    var coinsEl = el("span", "dt-coins");
+    stat.append(coinsEl);
     top.append(stat, el("span", "dt-grow"));
     if (ctx.dev) top.append(btn("dt-tb dt-gear", "⚙", openDev));
     top.append(btn("dt-tb", "📖<small>スタンプ</small>", function () { openBook("stamps"); }),
       btn("dt-tb", "🏪<small>おみせ</small>", openShop),
       btn("dt-tb dt-x", "✕<small>とじる</small>", close));
-    root.append(top);
-    function renderTop() {
-      coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>";
-      cardBtn.innerHTML = "📮 <b>" + s.card.boxes.length + "</b>/" + CARD_BOXES;
-    }
+    ui.append(top);
+    function renderTop() { coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>"; }
     function bumpCoins() { coinsEl.classList.remove("dt-bump"); later(function () { coinsEl.classList.add("dt-bump"); }, 10); }
 
     // -- the station sign (駅名標) and the progress bar
     var hud = el("div", "dt-hud"), sign = el("div", "dt-sign"), prog = el("div", "dt-prog");
     hud.append(sign, htmlEl("div", "dt-legs", "<i></i><i></i>"), prog);
-    root.append(hud);
+    ui.append(hud, el("div", "dt-room"));
     /** The sign for station i (default: the next one); at: the lap of the stop when the train is standing there. */
     function renderSign(i, at) {
       if (busy && i == null) return;
@@ -1286,16 +1285,20 @@
         '<span class="dt-ptrain" style="left:calc(' + (f * 100).toFixed(1) + '% - 14px)">' + miniTrain(s.train, 0.16) + "</span></span>" +
         '<span class="dt-pnext">' + st[1] + "</span>";
     }
-    // -- the last 7 days (study days filled) and the daily bonus they give
-    var week = el("div", "dt-week");
-    root.append(week);
+    // -- the week strip: the stamp card's progress, the daily bonus and the last 7 days (study days filled), all
+    // about study days; tapping it opens the stamp card
+    var week = el("button", "dt-week");
+    week.type = "button";
+    week.addEventListener("click", function (e) { e.stopPropagation(); if (!busy) openCard(); });
+    ui.append(week);
     function renderWeek() {
       var t = today(), n = dayNo(t), dots = "";
       for (var d = n - 6; d <= n; d++) {
         var day = dayOf(d), on = s.days.indexOf(day) >= 0, wd = "日月火水木金土".charAt(new Date(d * 864e5).getUTCDay());
         dots += '<span class="dt-wd' + (on ? " dt-won" : "") + (d === n ? " dt-wtoday" : "") + '"><i>' + (on ? "★" : "") + "</i>" + wd + "</span>";
       }
-      week.innerHTML = '<span class="dt-wlbl">まいにち<br>ボーナス <b>×' + Math.max(1, studyK(s, t)) + "</b></span>" + dots;
+      week.innerHTML = '<span class="dt-wrow"><span class="dt-wcard">📮 <b>' + s.card.boxes.length + "</b>/" + CARD_BOXES + "</span>" +
+        '<span class="dt-wlbl">まいにち ボーナス <b>×' + Math.max(1, studyK(s, t)) + '</b></span></span><span class="dt-wdots">' + dots + "</span>";
     }
 
     // -- arrivals: the platform slides in, the stamp comes down (ポン！), the souvenir pops out
@@ -1343,7 +1346,7 @@
       all.hidden = true;
       paper.append(htmlEl("div", "dt-ah", ruby(st[0], st[1]) + " に とうちゃく！"),
         el("div", "dt-asub", lap > 1 ? T.lap(lap) + " の スタンプ" : "えき スタンプ"), pad, gift, coin, go, all);
-      wrapEl.append(paper);
+      wrapEl.append(paper, btn("dt-tb dt-x dt-arrx", "✕<small>とじる</small>", close));
       root.append(wrapEl);
       var pressed = false;
       function press() {
@@ -1766,7 +1769,7 @@
     "@font-face{font-family:'DT Klee';src:url('_kleeone-semibold.ttf');font-weight:600 700;font-display:swap}",
     ".dt-chip,.dt-bubble,.dt-root,.dt-note{--dt-ink:#2b3150;--dt-paper:#fff8ea;--dt-paper2:#f3e4c4;--dt-red:#e0523f;--dt-gold:#f4b63f;",
     "--dt-green:#36a058;font-family:'DT Klee','Klee One','Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif;color:var(--dt-ink);",
-    "-webkit-tap-highlight-color:transparent;box-sizing:border-box;line-height:1.35;text-align:left;letter-spacing:0;word-break:keep-all;",
+    "-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%;box-sizing:border-box;line-height:1.35;text-align:left;letter-spacing:0;word-break:keep-all;",
     "overflow-wrap:anywhere;-webkit-user-select:none;user-select:none}",
     ".dt-chip *,.dt-bubble *,.dt-root *{box-sizing:border-box}",
     ".dt-root button,.dt-chip{font-family:inherit;color:var(--dt-ink);-webkit-appearance:none;appearance:none}",
@@ -1865,24 +1868,26 @@
     ".dt-board::before,.dt-board::after{content:'';position:absolute;top:-11px;width:3px;height:9px;background:#525b67;left:22%}.dt-board::after{left:auto;right:22%}",
     ".dt-pillar{position:absolute;top:28px;bottom:0;width:10px;background:linear-gradient(90deg,#8f98a3,#d2d7dd 60%,#a3abb5)}",
     // the top bar
-    ".dt-top{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;gap:3px;padding:6px 6px 0}",
+    ".dt-ui{position:absolute;left:0;top:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;",
+    "padding:6px 8px 10px;pointer-events:none}.dt-ui>*{pointer-events:auto}.dt-ui>.dt-hud{pointer-events:none}",
+    ".dt-top{display:flex;align-items:center;gap:4px;width:100%;flex:none}.dt-room{flex:1 1 0;min-height:0}",
     ".dt-grow{flex:1 1 0;min-width:0}",
-    ".dt-stat{display:flex;align-items:center;gap:5px;min-width:0;flex:0 1 auto;height:44px;padding:0 9px;border-radius:22px;background:rgba(255,248,234,.94);",
+    ".dt-stat{display:flex;align-items:center;gap:5px;min-width:0;flex:0 1 auto;min-height:44px;padding:2px 12px;border-radius:22px;background:rgba(255,248,234,.94);",
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:14px;white-space:nowrap;overflow:hidden}",
-    ".dt-coins{flex:none}.dt-coins b,.dt-cardbtn b{font-size:16px}.dt-coins.dt-bump{display:inline-block}",
-    ".dt-cardbtn{flex:none;border:0;background:none;padding:0 2px;min-height:40px;font-size:14px;cursor:pointer}",
+    ".dt-coins{flex:none;white-space:nowrap}.dt-coins b{font-size:17px}.dt-coins.dt-bump{display:inline-block}",
+    
     ".dt-slap{position:absolute;right:8px;top:9px;font-size:11px;font-weight:700;color:#5a6078;background:var(--dt-paper2);border-radius:9px;padding:1px 7px}",
-    ".dt-sep{flex:none;width:2px;height:18px;border-radius:1px;background:#d8cdb6}",
+    
     ".dt-btn{min-height:44px;min-width:44px;padding:6px 14px;border-radius:14px;border:2.5px solid var(--dt-ink);background:#fff;",
     "box-shadow:0 3px 0 var(--dt-ink);font-size:15px;font-weight:700;cursor:pointer;line-height:1.2}",
     ".dt-btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--dt-ink)}",
     ".dt-btn:disabled{cursor:default}",
-    ".dt-tb{flex:none;width:44px;min-width:44px;height:46px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;",
+    ".dt-tb{flex:none;min-width:44px;min-height:46px;padding:2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;",
     "font-size:19px;border-radius:15px;background:rgba(255,248,234,.94)}",
     ".dt-tb small{font-size:9px;line-height:1;margin-top:2px}.dt-x{background:#ffe3dc}.dt-gear small{display:none}",
     ".dt-primary{background:var(--dt-gold)}.dt-danger{background:#ffb3a6}",
     // the station sign (駅名標) and progress
-    ".dt-hud{position:absolute;left:50%;top:62px;z-index:3;width:min(calc(100% - 28px),400px);transform:translateX(-50%);pointer-events:none}",
+    ".dt-hud{flex:none;width:min(100%,400px)}",
     ".dt-sign{position:relative;background:#fff;border:2.5px solid var(--dt-ink);border-radius:12px;padding:6px 10px 6px;text-align:center;",
     "box-shadow:0 4px 0 rgba(43,49,80,.25)}",
     ".dt-flip{animation:dt-flip .5s ease-out}@keyframes dt-flip{0%{transform:rotateX(80deg);opacity:.3}100%{transform:none;opacity:1}}",
@@ -1906,9 +1911,11 @@
     ".dt-ptrain{position:absolute;bottom:7px}.dt-ptrain svg{display:block}",
     ".dt-pnext{flex:none;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--dt-paper2)}",
     // the week strip
-    ".dt-week{position:absolute;left:50%;bottom:12px;z-index:3;transform:translateX(-50%);display:flex;align-items:center;gap:5px;",
-    "padding:6px 12px;border-radius:18px;background:rgba(255,255,255,.9);border:2px solid rgba(43,49,80,.5);pointer-events:none;white-space:nowrap}",
-    ".dt-wlbl{font-size:11px;line-height:1.15;margin-right:4px;text-align:center}.dt-wlbl b{font-size:15px;color:var(--dt-red)}",
+    ".dt-week{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:100%;padding:5px 12px 6px;margin:0;border-radius:18px;",
+    "background:rgba(255,255,255,.92);border:2px solid rgba(43,49,80,.5);box-shadow:0 2px 0 rgba(43,49,80,.3);font-size:12px;cursor:pointer}",
+    ".dt-wrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:0 12px;line-height:1.3}",
+    ".dt-wcard b,.dt-wlbl b{font-size:15px;color:var(--dt-red)}.dt-wcard{white-space:nowrap}.dt-wlbl{white-space:nowrap}",
+    ".dt-wdots{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 5px}",
     ".dt-wd{display:flex;flex-direction:column;align-items:center;font-size:10px;color:#7a7f92}",
     ".dt-wd i{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px dashed #c9c0ae;",
     "font-style:normal;font-size:12px;color:#fff}",
@@ -1953,8 +1960,8 @@
     ".dt-allgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 6px;margin-bottom:12px}",
     ".dt-allone{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}.dt-allone .dt-stw{width:76px;height:76px}",
     ".dt-allgift{position:absolute;right:2px;top:46px;font-size:24px}.dt-allname{font-size:13px;font-weight:700}.dt-allname rt{font-size:11px;font-weight:400}",
-    // while stamps are pressed, the top bar stays above the sheet with only ✕ in it (closing keeps what was pressed)
-    ".dt-busy .dt-top{z-index:31}.dt-busy .dt-top .dt-tb:not(.dt-x){visibility:hidden}.dt-busy .dt-cardbtn{pointer-events:none}",
+    // while stamps are pressed the sheet has its own ✕ (closing keeps what was pressed) and the bar's other buttons hide
+    ".dt-busy .dt-top .dt-tb:not(.dt-x){visibility:hidden}.dt-arrx{position:absolute;right:8px;top:6px;z-index:2}",
     "@keyframes dt-pop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}",
     "@keyframes dt-up{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}",
     "@keyframes dt-fade{from{opacity:0}to{opacity:1}}",
@@ -1966,7 +1973,7 @@
     ".dt-ptitle{flex:1;min-width:0;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".dt-pcoins{flex:none;font-size:14px;padding:6px 12px;border-radius:16px;background:#fff;border:2px solid var(--dt-ink)}",
     ".dt-pbody{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 12px 28px}",
-    ".dt-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin:0 0 12px}",
+    ".dt-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.dt-tabs .dt-tab{flex:1 1 auto}",
     ".dt-tab{padding:4px 2px;font-size:12.5px;white-space:nowrap;border-radius:14px;background:#f1e5c9;box-shadow:0 2px 0 var(--dt-ink)}",
     ".dt-tab.dt-on{background:var(--dt-gold);transform:translateY(2px);box-shadow:none}",
     // stamp book
@@ -2049,10 +2056,15 @@
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:18px;font-weight:700;white-space:nowrap;animation:dt-pop .35s cubic-bezier(.2,1.6,.4,1);pointer-events:none}",
     ".dt-devgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dt-devgrid .dt-btn{font-size:13px;padding:6px}",
     // sideways phones
-    "@media " + SIDEWAYS + "{.dt-root{--g:46px;--up1:48px;--up2:18px}.dt-hud{left:10px;top:56px;width:290px;transform:none}.dt-sbig{font-size:24px}",
-    ".dt-skan{font-size:14px}.dt-week{left:auto;right:10px;transform:none;bottom:auto;top:58px}",
+    "@media " + SIDEWAYS + "{.dt-root{--g:46px;--up1:48px;--up2:18px}",
+    ".dt-ui{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);grid-template-rows:auto auto 1fr;align-items:start}",
+    ".dt-top{grid-column:1/3}.dt-hud{grid-column:1;grid-row:2;width:auto}.dt-room{display:none}",
+    ".dt-week{grid-column:2;grid-row:2;justify-self:end}.dt-sbig{font-size:24px}.dt-skan{font-size:14px}",
     ".dt-clouds{top:50px}.dt-sun{top:70px}.dt-stn{height:210px}.dt-pad{width:150px;height:150px}.dt-sheet{padding:8px 14px 10px}",
     ".dt-arr{align-items:flex-start;overflow-y:auto}.dt-gemoji{font-size:34px}.dt-boxes{gap:20px 14px}.dt-rcard{max-width:520px}}",
+    // short phones upright (the card view sits between AnkiDroid's bars): a smaller sign and ground
+    "@media (orientation:portrait) and (max-height:660px){.dt-root{--g:112px}.dt-sbig{font-size:28px}.dt-long{font-size:23px}",
+    ".dt-sign{padding:4px 10px}.dt-legs{height:6px}.dt-prog{padding:4px 12px}}",
     // reduced motion: no drifting, spinning or flying; things fade in instead
     "@media (prefers-reduced-motion:reduce){.dt-layer,.dt-snow,.dt-root .dt-wh,.dt-root .dt-rod,.dt-trainbox,.dt-root .dt-puff,.dt-ping,.dt-bping{animation:none!important}",
     ".dt-bubble{animation:dt-fade .3s both}.dt-bout{animation:dt-fadeout .4s forwards}.dt-btrain{transition:none}",
