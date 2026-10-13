@@ -21,7 +21,7 @@
 
   // ---- data -------------------------------------------------------------------------------------
   var KEY = "densha-tabi", DEV_DAY_KEY = "densha-tabi-dev-day", V = 1;
-  var DEFAULT_SEG = 12, MIN_SEG = 6, MAX_SEG = 200;
+  var DEFAULT_SEG = 12, MIN_SEG = 6, MAX_SEG = 2000;
   var ARRIVAL_COINS = 10, CARD_COINS = 50, CARD_BOXES = 10;
 
   /** The 47 stations in JIS order: [kanji, kana, souvenir emoji, souvenir kana]. */
@@ -106,6 +106,10 @@
     daily: function (k) { return "📮 スタンプカード ＋1 ・ まいにち ボーナス ×" + k; },
     cardFull: "📮 カード いっぱい！ ＋50 🪙",
     special: function (e) { return e + " が のってきた！"; },
+    specialList: function (e) { return e + " が なかまに なったよ！ おみせで すわらせてね"; },
+    full: "でんしゃ たび: セーブが いっぱいだよ",
+    fullParent: "（Parents: AnkiDroid's study-screen localStorage is full, so today's progress can't be saved. Free some space, e.g. other card games' data.）",
+    saveFail: function () { return saveFull ? "セーブが いっぱいだよ" : "いま ほぞん できないよ"; },
     lap: function (n) { return n + "しゅうめ"; },
     title: "でんしゃ たび"
   };
@@ -193,7 +197,13 @@
   /** Write the save (never a locked one). Returns the JSON written, or false if it couldn't be stored. */
   function save(s) {
     if (!s || s.locked) return false;
-    try { var j = JSON.stringify(s); g.localStorage.setItem(KEY, j); return j; } catch (e) { return false; }
+    try { var j = JSON.stringify(s); g.localStorage.setItem(KEY, j); saveFull = false; return j; }
+    catch (e) { saveFull = isQuota(e); return false; }
+  }
+  /** Whether the last failed save failed because the storage is full (not because it's off or blocked). */
+  var saveFull = false;
+  function isQuota(e) {
+    return !!e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014 || /quota/i.test(String(e.message || "")));
   }
   /** Make save object s the same as src (in place, so every view of s sees it). */
   function replaceSave(s, src) {
@@ -238,13 +248,16 @@
     if (!Array.isArray(s.card.boxes)) s.card.boxes = [];
     s.card.boxes = s.card.boxes.filter(isDay).slice(0, CARD_BOXES - 1);
     if (!isInt(s.card.done, 0, 1e6)) s.card.done = 0;
-    var o = s.owned, known = PASSENGERS.concat(SPECIALS).map(function (x) { return x[0]; });
+    var o = s.owned;
     function list(v, ok) { return (Array.isArray(v) ? v : []).filter(function (x, i, a) { return ok(x) && a.indexOf(x) === i; }); }
-    o.models = list(o.models, function (x) { return MODELS.some(function (m) { return m.id === x; }); });
+    // Ids this script doesn't know (bought with a newer one) are kept as they are, only not drawn or sold here: an
+    // older script on another card must never delete newer purchases.
+    function str(x) { return typeof x === "string" && x.length > 0 && x.length <= 40; }
+    o.models = list(o.models, str);
     if (o.models.indexOf("local") < 0) o.models.unshift("local");
-    o.colors = list(o.colors, function (x) { return !!colorOf(x); });
+    o.colors = list(o.colors, str);
     if (!isInt(o.cars, 0, MAX_CARS)) o.cars = Math.min(MAX_CARS, Math.max(0, Math.floor(Number(o.cars)) || 0));
-    o.passengers = list(o.passengers, function (x) { return known.indexOf(x) >= 0; });
+    o.passengers = list(o.passengers, str);
     var t = s.train;
     if (o.models.indexOf(t.model) < 0) t.model = "local";
     if (t.color !== "" && o.colors.indexOf(t.color) < 0) t.color = "";
@@ -257,14 +270,15 @@
   }
 
   // ---- movement and rewards (pure: they change s, the caller saves) -----------------------------
-  /** The next segment's length: the median of cards paid per study day over the last 7 study days, clamped to
-   *  6..200, or 12 with no history. Today is left out (it's still going, so its count is low), which also fixes
-   *  a day's segments by the days before it. */
+  /** The next segment's length, fixed as it starts: the median of cards paid per study day over the last 7 study
+   *  days before today (12 with no history), or the cards paid so far today if that is more, clamped to 6..2000.
+   *  Today's count only ever raises it, so an unusual day (a first-ever 500-card day, a return after a long break,
+   *  an erratic deck) can't race through the map: each station it passes makes the next one further away. */
   function segLength(s, day) {
     var counts = Object.keys(s.perDay).filter(function (d) { return isDay(d) && d < day && s.perDay[d] > 0; })
       .sort().slice(-7).map(function (d) { return s.perDay[d]; }).sort(function (a, b) { return a - b; });
-    if (!counts.length) return DEFAULT_SEG;
-    var m = counts.length, med = m % 2 ? counts[(m - 1) / 2] : (counts[m / 2 - 1] + counts[m / 2]) / 2;
+    var m = counts.length, med = !m ? DEFAULT_SEG : m % 2 ? counts[(m - 1) / 2] : (counts[m / 2 - 1] + counts[m / 2]) / 2;
+    med = Math.max(med, s.perDay[day] || 0);
     return Math.min(MAX_SEG, Math.max(MIN_SEG, Math.round(med)));
   }
   /** Study days among the 7 days ending with day (day included). */
@@ -298,13 +312,13 @@
     s.card.done++;
     s.card.boxes = [];
     s.coins += CARD_COINS;
-    var sp = SPECIALS[s.card.done - 1], special = null;
+    var sp = SPECIALS[s.card.done - 1], special = null, seated = false;
     if (sp && s.owned.passengers.indexOf(sp[0]) < 0) {
       special = sp[0];
       s.owned.passengers.push(special);
-      autoSeat(s, special);
+      seated = autoSeat(s, special);
     }
-    return { full: true, special: special, boxes: CARD_BOXES };
+    return { full: true, special: special, seated: seated, boxes: CARD_BOXES };
   }
   /** Forget what no longer matters: paid cards from before yesterday, per-day counts older than 30 days. */
   function prune(s, day) {
@@ -348,14 +362,17 @@
 
   // ---- shop (pure) ------------------------------------------------------------------------------
   var LEAD_SEATS = { local: 3, tram: 3, mono: 4, sl: 1, shin: 4 };
+  /** The model to draw for train t: its own, or the local train for a model this script doesn't know. */
+  function drawn(t) { return LEAD_SEATS[t.model] ? t.model : "local"; }
   var CAR_SEATS = { local: 3, tram: 3, mono: 4, sl: 4, shin: 6 };
   /** Windows on the train as it is now: the lead car's, then each extra car's. */
-  function windowsOf(t) { return LEAD_SEATS[t.model] + t.cars * CAR_SEATS[t.model]; }
-  /** Seat passenger e in the first empty window, if any (else it waits in the list). */
+  function windowsOf(t) { var m = drawn(t); return LEAD_SEATS[m] + t.cars * CAR_SEATS[m]; }
+  /** Seat passenger e in the first empty window, if any (else it waits in the list). Whether it has a seat. */
   function autoSeat(s, e) {
     var t = s.train, n = windowsOf(t);
-    if (t.seats.indexOf(e) >= 0) return;
-    for (var i = 0; i < n; i++) if (!t.seats[i]) { t.seats[i] = e; return; }
+    if (t.seats.indexOf(e) >= 0) return true;
+    for (var i = 0; i < n; i++) if (!t.seats[i]) { t.seats[i] = e; return true; }
+    return false;
   }
   /** What an item costs, or 0 if it's free / owned. kind: model | color | car | pass. */
   function priceOf(kind, id) {
@@ -616,15 +633,15 @@
 
   /** The paint for a train: body colour, stripe (white once painted, so it shows on any paint), SL coach colour. */
   function paintOf(t) {
-    var m = modelOf(t.model), c = colorOf(t.color);
-    return { body: c ? c.c : m.base, stripe: c && t.model !== "tram" && t.model !== "sl" ? "#ffffff" : m.stripe,
+    var m = modelOf(drawn(t)), c = colorOf(t.color);
+    return { body: c ? c.c : m.base, stripe: c && m.id !== "tram" && m.id !== "sl" ? "#ffffff" : m.stripe,
       coach: c ? c.c : "#8b4a2b" };
   }
   /** The train as HTML: its cars side by side (the lead car on the right), each an SVG at scale px per unit.
    *  opts.seats: false draws no passengers. */
   function trainHTML(t, scale, opts) {
     opts = opts || {};
-    var draw = CARS[t.model] || CARS.local, p = paintOf(t), L = LEAD_SEATS[t.model], C = CAR_SEATS[t.model];
+    var m = drawn(t), draw = CARS[m], p = paintOf(t), L = LEAD_SEATS[m], C = CAR_SEATS[m];
     var seats = opts.seats === false ? [] : t.seats, out = [];
     function one(i) {
       var from = i === 0 ? 0 : L + (i - 1) * C, n = i === 0 ? L : C;
@@ -1067,7 +1084,7 @@
   function miniTrain(t, scale) { return trainHTML({ model: t.model, color: t.color, cars: 0, seats: [] }, scale, { seats: false }); }
   /** The train's width in drawing units (to fit it on screen). */
   function trainUnits(t) {
-    var d = CARS[t.model] || CARS.local, c = { body: "", stripe: "", coach: "", seats: [] };
+    var d = CARS[drawn(t)], c = { body: "", stripe: "", coach: "", seats: [] };
     return d.lead(c).w + t.cars * (d.car(c).w - 3);
   }
 
@@ -1081,7 +1098,13 @@
     var data = slot.dataset || {}, dev = data.dev === "1";
     shift = dev ? devShift() : 0;
     var rs = readSave(), s = rs.s;
-    function note() { slot.append(el("div", "dt-note", T.noStorage)); return { s: s, slot: slot, note: true }; }
+    /** The one-line note instead of the chip: storage off/blocked, or (full) storage full, with a line for parents. */
+    function note(full) {
+      var n = el("div", "dt-note" + (full ? " dt-full" : ""), full ? T.full : T.noStorage);
+      if (full) n.append(el("div", "dt-noteparent", T.fullParent));
+      slot.append(n);
+      return { s: s, slot: slot, note: true };
+    }
     if (s.nostore) return note();
     var ctx = { s: s, raw: rs.raw, slot: slot, dev: dev, chip: null, game: null, ev: null };
     var card = data.card;
@@ -1089,7 +1112,7 @@
       ctx.ev = payCard(s, String(card), today());
       if (ctx.ev) {
         var w = save(s);
-        if (!w) return note();     // the payment couldn't be stored: say what to fix rather than celebrate it
+        if (!w) return note(saveFull);     // the payment couldn't be stored: say what to fix rather than celebrate it
         ctx.raw = w;
       }
     }
@@ -1134,7 +1157,7 @@
     if (ev.first) b.append(el("div", "dt-bday", T.daily(ev.k)));
     if (ev.card && ev.card.full) {
       b.append(el("div", "dt-bday dt-bfull", T.cardFull));
-      if (ev.card.special) b.append(el("div", "dt-bday dt-bfull", T.special(ev.card.special)));
+      if (ev.card.special) b.append(el("div", "dt-bday dt-bfull", (ev.card.seated ? T.special : T.specialList)(ev.card.special)));
     }
     b.addEventListener("click", function (e) { if (e && e.stopPropagation) e.stopPropagation(); b.remove(); if (!s.locked) openGame(ctx); });
     ctx.slot.append(b);
@@ -1151,7 +1174,7 @@
   /** Open the game full screen over the card. Everything inside saves at once on every change. */
   function openGame(ctx) {
     if (ctx.game) return;
-    var s = ctx.s, timers = [], phase = null, busy = false, region = null;
+    var s = ctx.s, timers = [], phase = null, busy = false, region = null, run = 0;   // run: stamps pressed this opening
     var root = el("div", "dt-root"), docEl = doc.documentElement;
     root.id = "dt-game";
     ctx.game = root;
@@ -1169,11 +1192,11 @@
      *  can't be written, undo the change (so nothing looks bought that isn't) and say so. fn returning false
      *  means nothing changed. Returns whether it changed and was saved. */
     function act(fn, train) {
-      if (!syncIn(ctx)) { toast("いま ほぞん できないよ"); return false; }
+      if (!syncIn(ctx)) { toast(T.saveFail()); return false; }
       var before = JSON.stringify(s);
       if (fn() === false) { redraw(train); return false; }
       var w = save(s);
-      if (!w) { replaceSave(s, JSON.parse(before)); redraw(true); toast("いま ほぞん できないよ"); return false; }
+      if (!w) { replaceSave(s, JSON.parse(before)); redraw(true); toast(T.saveFail()); return false; }
       ctx.raw = w;
       redraw(train);
       return true;
@@ -1218,15 +1241,15 @@
       var h = g.innerHeight || 740, w = g.innerWidth || 360;
       var sc = Math.max(0.72, Math.min(1.25, (w > h && h <= 500 ? h / 420 : h / 620)));
       trainBox.innerHTML = '<div class="dt-train">' + trainHTML(s.train, sc) + "</div>";
-      root.classList.toggle("dt-mono", s.train.model === "mono");
+      root.classList.toggle("dt-mono", drawn(s.train) === "mono");
     }
 
     // -- the top bar
     var top = el("div", "dt-top"), stat = el("div", "dt-stat");
-    var coinsEl = el("span", "dt-coins"), cardBtn = el("button", "dt-cardbtn"), lapEl = el("span", "dt-lap");
+    var coinsEl = el("span", "dt-coins"), cardBtn = el("button", "dt-cardbtn");
     cardBtn.type = "button";
     cardBtn.addEventListener("click", function (e) { e.stopPropagation(); openCard(); });
-    stat.append(coinsEl, el("i", "dt-sep"), cardBtn, el("i", "dt-sep"), lapEl);
+    stat.append(coinsEl, el("i", "dt-sep"), cardBtn);
     top.append(stat, el("span", "dt-grow"));
     if (ctx.dev) top.append(btn("dt-tb dt-gear", "⚙", openDev));
     top.append(btn("dt-tb", "📖<small>スタンプ</small>", function () { openBook("stamps"); }),
@@ -1236,7 +1259,6 @@
     function renderTop() {
       coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>";
       cardBtn.innerHTML = "📮 <b>" + s.card.boxes.length + "</b>/" + CARD_BOXES;
-      lapEl.textContent = T.lap(s.pos.lap);
     }
     function bumpCoins() { coinsEl.classList.remove("dt-bump"); later(function () { coinsEl.classList.add("dt-bump"); }, 10); }
 
@@ -1244,14 +1266,14 @@
     var hud = el("div", "dt-hud"), sign = el("div", "dt-sign"), prog = el("div", "dt-prog");
     hud.append(sign, htmlEl("div", "dt-legs", "<i></i><i></i>"), prog);
     root.append(hud);
-    /** The sign for station i (default: the next one); at: the train is standing there. */
+    /** The sign for station i (default: the next one); at: the lap of the stop when the train is standing there. */
     function renderSign(i, at) {
       if (busy && i == null) return;
       var p = s.pos;
       if (i == null) i = (p.station + 1) % N;
       var st = STATIONS[i], r = regionOf(i), prev = (i + N - 1) % N, nx = (i + 1) % N;
       sign.style.setProperty("--rc", r.color);
-      sign.innerHTML = '<span class="dt-sno">' + (i + 1) + "</span>" +
+      sign.innerHTML = '<span class="dt-sno">' + (i + 1) + '</span><span class="dt-slap">' + T.lap(at ? at : p.lap) + "</span>" +
         '<div class="dt-sbig' + (st[1].length > 5 ? " dt-long" : "") + '">' + st[1] + "</div>" + '<div class="dt-skan">' + ruby(st[0], st[1]) + "</div>" +
         '<div class="dt-sband">' + r.name + '</div><div class="dt-snav"><span>← ' + (i === 0 ? "✈️ " : "") + kanaOf(prev) + "</span><span>" +
         kanaOf(nx) + (nx === 0 ? " ✈️" : "") + " →</span></div>";
@@ -1301,7 +1323,7 @@
       stn.innerHTML = '<div class="dt-roof"><span class="dt-board">' + st[1] + " えき</span></div>" +
         '<i class="dt-pillar" style="left:6%"></i><i class="dt-pillar" style="left:36%"></i><i class="dt-pillar" style="left:66%"></i><i class="dt-pillar" style="left:94%"></i>' +
         '<span class="dt-bench"></span>';
-      renderSign(a.station, true);
+      renderSign(a.station, a.lap);
       scene.classList.remove("dt-leaving", "dt-at");
       scene.classList.add("dt-arriving");
       next(function () { scene.classList.remove("dt-arriving"); scene.classList.add("dt-at", "dt-stopped"); stampTime(a); }, reduced() ? 500 : 1700);
@@ -1316,20 +1338,45 @@
       pad.append(el("i", "dt-ring"), el("i", "dt-inkspread"), big, htmlEl("div", "dt-hanko", hankoSVG(lap)), el("span", "dt-pon", "ポン！"));
       gift.innerHTML = '<span class="dt-gemoji">' + st[2] + '</span><span class="dt-gtxt"><small>おみやげ</small><br>' + st[3] + "</span>";
       var go = btn("dt-go dt-primary", s.queue.length > 1 ? "つぎの スタンプ ▶" : "しゅっぱつ！ 🚃", function () { done(); });
+      var all = btn("dt-go dt-all", "", pressAll);
       go.hidden = true;
+      all.hidden = true;
       paper.append(htmlEl("div", "dt-ah", ruby(st[0], st[1]) + " に とうちゃく！"),
-        el("div", "dt-asub", lap > 1 ? T.lap(lap) + " の スタンプ" : "えき スタンプ"), pad, gift, coin, go);
+        el("div", "dt-asub", lap > 1 ? T.lap(lap) + " の スタンプ" : "えき スタンプ"), pad, gift, coin, go, all);
       wrapEl.append(paper);
       root.append(wrapEl);
       var pressed = false;
       function press() {
         if (pressed) return;
         pressed = true;
-        act(function () { if (!s.queue.length) return false; pressStamp(s); });
+        if (act(function () { if (!s.queue.length) return false; pressStamp(s); })) run++;
         bumpCoins();
         pad.classList.add("dt-pressed");
       }
-      function finish() { press(); gift.classList.add("dt-on"); coin.classList.add("dt-on"); go.hidden = false; phase = null; }
+      function finish() {
+        press();
+        gift.classList.add("dt-on"); coin.classList.add("dt-on"); go.hidden = false; phase = null;
+        // a long queue (a big day, or days away): after two in a row, offer to press the rest at once
+        if (run >= 2 && s.queue.length) { all.innerHTML = "ぜんぶ おす（あと " + s.queue.length + "）"; all.hidden = false; }
+      }
+      /** Press every waiting stamp in one save, then show them all on one sheet. */
+      function pressAll() {
+        var got = [];
+        if (!act(function () { while (s.queue.length) got.push(pressStamp(s)); })) return;
+        run += got.length;
+        bumpCoins();
+        paper.innerHTML = "";
+        var grid = el("div", "dt-allgrid");
+        got.forEach(function (x) {
+          grid.append(htmlEl("div", "dt-allone", '<span class="dt-stw" style="transform:rotate(' + tiltOf(x.station, x.lap) + 'deg)">' +
+            stampSVG(x.station, x.lap) + '</span><span class="dt-allgift">' + STATIONS[x.station][2] + "</span>" +
+            '<span class="dt-allname">' + ruby(STATIONS[x.station][0], STATIONS[x.station][1]) + "</span>"));
+        });
+        paper.append(el("div", "dt-ah", "スタンプ " + got.length + "こ ポン！"),
+          htmlEl("div", "dt-allcoins", "＋10 × " + got.length + " ＝ <b>＋" + got.length * ARRIVAL_COINS + " 🪙</b>"),
+          grid, btn("dt-go dt-primary", "しゅっぱつ！ 🚃", done));
+        paper.classList.add("dt-allsheet");
+      }
       wrapEl.addEventListener("click", function () { if (!go.hidden) return; skip(); });
       var quick = reduced();
       next(function (skipped) {
@@ -1417,11 +1464,11 @@
       var st = STATIONS[i], lap = s.stamps[i], c;
       if (lap) {
         c = btn("dt-cell", '<span class="dt-stw" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(i, lap) + "</span>" +
-          '<span class="dt-cname">' + st[0] + "</span>" + (lap > 1 ? '<span class="dt-lapb" style="background:' + inkOf(lap) + '">' + T.lap(lap) + "</span>" : ""),
+          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>" + (lap > 1 ? '<span class="dt-lapb" style="background:' + inkOf(lap) + '">' + T.lap(lap) + "</span>" : ""),
           function () { bigStamp(i); });
       } else {
-        c = htmlEl("div", "dt-cell dt-none", '<span class="dt-empty"><b>' + st[0] + "</b><small>" + st[1] + "</small></span>" +
-          '<span class="dt-cname">？</span>');
+        c = htmlEl("div", "dt-cell dt-none", '<span class="dt-empty"><b>' + st[0] + "</b></span>" +
+          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>");
       }
       return c;
     }
@@ -1518,7 +1565,7 @@
         area.append(list);
       }
       function colors() {
-        var list = el("div", "dt-items dt-tiles"), m = modelOf(s.train.model);
+        var list = el("div", "dt-items dt-tiles"), m = modelOf(drawn(s.train));
         list.append(item('<i class="dt-swatch" style="background:' + m.base + '"></i>', "もとの いろ", stateOf("color", "", s.train.color === ""), function () {
           act(function () { return equip(s, "color", ""); }, true); draw();
         }, true));
@@ -1545,7 +1592,7 @@
         area.append(box);
       }
       function passengers() {
-        var t = s.train, n = windowsOf(t), L = LEAD_SEATS[t.model], C = CAR_SEATS[t.model];
+        var t = s.train, n = windowsOf(t), L = LEAD_SEATS[drawn(t)], C = CAR_SEATS[drawn(t)];
         area.append(el("div", "dt-hint", pick ? pick + " を どの まどに？ まどを タップ してね" : "どうぶつを えらんで、まどを タップ してね"));
         var seats = el("div", "dt-seats");
         for (var c = 0; c <= t.cars; c++) {
@@ -1654,18 +1701,18 @@
   }
 
   // ---- the route map ----------------------------------------------------------------------------
-  /** ろせんず: all 47 stations on a snaking subway-style line, 5 a row, region colours; stations with a stamp
-   *  are filled, and a little train marks where the train is now. */
+  /** ろせんず: all 47 stations on a snaking subway-style line, 4 a row, region colours; stations with a stamp
+   *  are filled, and a little train marks where the train is now (a plane, between 沖縄 and 北海道). Labels are the
+   *  kanji with the kana under it, the kana at 12.5 units (about 11.5 px on a 360 px phone). */
   function routeSVG(s) {
-    var W = 360, per = 5, x0 = 46, dx = (W - 2 * x0) / (per - 1), y0 = 70, dy = 80, rows = Math.ceil(N / per);
+    var W = 360, per = 4, x0 = 52, dx = (W - 2 * x0) / (per - 1), y0 = 66, dy = 86, rows = Math.ceil(N / per);
     function pt(i) {
       var r = Math.floor(i / per), c = i % per;
       return [r % 2 ? W - x0 - c * dx : x0 + c * dx, y0 + r * dy];
     }
     /** The point a fraction f along the line from station i to i+1 (a U-turn between rows). */
     function along(i, f) {
-      var a = pt(i), b = pt(Math.min(i + 1, N - 1));
-      if (i + 1 >= N) return a;
+      var a = pt(i), b = pt(i + 1);
       if (a[1] === b[1]) return [a[0] + (b[0] - a[0]) * f, a[1]];
       var right = a[0] > W / 2, ang = Math.PI * f, cy = (a[1] + b[1]) / 2, rr = dy / 2;
       return [a[0] + (right ? 1 : -1) * rr * Math.sin(ang), cy - rr * Math.cos(ang)];
@@ -1680,20 +1727,27 @@
       var p = pt(j), rc = regionOf(j).color, got = s.stamps[j], st = STATIONS[j];
       dots += got ? circ(p[0], p[1], 10, rc, ' stroke="#fff" stroke-width="3.5"') + '<path d="M' + (p[0] - 4) + " " + p[1] + "l3 3l5 -6" + '" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
         : circ(p[0], p[1], 8.5, "#fff", ' stroke="' + rc + '" stroke-width="3.5" opacity=".75"');
-      labels += '<text x="' + p[0] + '" y="' + (p[1] + 27) + '" font-size="13" text-anchor="middle" font-weight="700" fill="' + (got ? "#2b3150" : "#a59d8e") + '">' + st[0] + "</text>" +
-        '<text x="' + p[0] + '" y="' + (p[1] + 38) + '" font-size="8.5" text-anchor="middle" fill="' + (got ? "#5a6078" : "#b8b0a2") + '">' + st[1] + "</text>";
+      labels += '<text x="' + p[0] + '" y="' + (p[1] + 29) + '" font-size="15" text-anchor="middle" font-weight="700" fill="' + (got ? "#2b3150" : "#a59d8e") + '">' + st[0] + "</text>" +
+        '<text x="' + p[0] + '" y="' + (p[1] + 44) + '" font-size="12.5" text-anchor="middle" fill="' + (got ? "#4a5068" : "#ada595") + '">' + st[1] + "</text>";
     }
-    var here = along(s.pos.station, s.pos.step / s.pos.seg);
-    var marker = '<g transform="translate(' + here[0].toFixed(1) + " " + here[1].toFixed(1) + ')"><circle class="dt-ping" r="15" fill="#2b3150" opacity=".18"/>' +
-      '<circle r="13" fill="#fff" stroke="#2b3150" stroke-width="2.5"/>' +
-      '<g transform="translate(-10.5 -6.5) scale(.12)">' + (CARS[s.train.model] || CARS.local).lead(Object.assign({ seats: [] }, paintOf(s.train))).svg + "</g></g>";
+    var end = pt(N - 1), planeAt = [end[0], end[1] + 66], marker;
+    var fly = '<path d="M' + end[0] + " " + (end[1] + 50) + "V" + (planeAt[1] - 14) + '" stroke="#8a8fa3" stroke-width="2.5" stroke-dasharray="3 5" fill="none"/>';
+    if (s.pos.station === N - 1) {      // on the way from 沖縄 back to 北海道: in the plane
+      marker = '<g transform="translate(' + planeAt[0] + " " + planeAt[1] + ')"><circle class="dt-ping" r="17" fill="#2b3150" opacity=".18"/>' +
+        '<circle r="15" fill="#fff" stroke="#2b3150" stroke-width="2.5"/><text y="6" font-size="17" text-anchor="middle">✈️</text></g>';
+    } else {
+      var here = along(s.pos.station, s.pos.step / s.pos.seg);
+      marker = '<g transform="translate(' + here[0].toFixed(1) + " " + here[1].toFixed(1) + ')"><circle class="dt-ping" r="15" fill="#2b3150" opacity=".18"/>' +
+        '<circle r="13" fill="#fff" stroke="#2b3150" stroke-width="2.5"/>' +
+        '<g transform="translate(-10.5 -6.5) scale(.12)">' + CARS[drawn(s.train)].lead(Object.assign({ seats: [] }, paintOf(s.train))).svg + "</g></g>";
+    }
     var legend = REGIONS.map(function (r, k) {
-      var x = 14 + (k % 4) * 86, y = 14 + Math.floor(k / 4) * 18;
-      return rect(x, y - 7, 14, 8, 4, r.color) + '<text x="' + (x + 18) + '" y="' + y + '" font-size="9.5" fill="#2b3150">' + (r.id === "kyushu" ? "きゅうしゅう" : r.name) + "</text>";
+      var x = 12 + (k % 4) * 87, y = 16 + Math.floor(k / 4) * 20;
+      return rect(x, y - 8, 14, 9, 4.5, r.color) + '<text x="' + (x + 18) + '" y="' + y + '" font-size="11.5" fill="#2b3150">' + (r.id === "kyushu" ? "きゅうしゅう" : r.name) + "</text>";
     }).join("");
-    var end = pt(N - 1);
-    return '<svg viewBox="0 0 ' + W + " " + (y0 + (rows - 1) * dy + 60) + '" aria-hidden="true">' + legend + lines + dots + labels +
-      '<text x="' + end[0] + '" y="' + (end[1] + 54) + '" font-size="11" text-anchor="middle" fill="#2b3150">✈️ ほっかいどうへ</text>' + marker + "</svg>";
+    return '<svg viewBox="0 0 ' + W + " " + (y0 + (rows - 1) * dy + 112) + '" aria-hidden="true">' + legend + lines + fly + dots + labels +
+      '<text x="' + (planeAt[0] + (planeAt[0] < W / 2 ? 24 : -24)) + '" y="' + (planeAt[1] + 5) + '" font-size="12.5" text-anchor="' +
+      (planeAt[0] < W / 2 ? "start" : "end") + '" fill="#2b3150">ひこうきで ほっかいどうへ</text>' + marker + "</svg>";
   }
 
   // ---- style ------------------------------------------------------------------------------------
@@ -1717,17 +1771,21 @@
     ".dt-chip *,.dt-bubble *,.dt-root *{box-sizing:border-box}",
     ".dt-root button,.dt-chip{font-family:inherit;color:var(--dt-ink);-webkit-appearance:none;appearance:none}",
     ".dt-note{font-size:13px;padding:8px 12px;margin:12px 0;border-radius:12px;background:var(--dt-paper);border:2px dashed #e0a43a}",
+    ".dt-noteparent{font-size:11px;color:#6a6f82;margin-top:4px;word-break:normal}",
     // the chip
-    ".dt-chip{position:fixed;left:10px;bottom:10px;z-index:2147482000;display:flex;align-items:center;gap:7px;height:44px;margin:0;",
+    ".dt-chip{position:fixed;left:10px;bottom:10px;z-index:8900;display:flex;align-items:center;gap:7px;height:44px;margin:0;",
     "padding:0 15px 0 10px;border-radius:22px;border:2.5px solid var(--dt-ink);background:var(--dt-paper);font-size:16px;font-weight:700;",
     "box-shadow:0 3px 0 var(--dt-ink),0 5px 14px rgba(0,0,0,.28);cursor:pointer;white-space:nowrap}",
+    // Under other card games' full-screen views (Kanpeki Garden's is at 9500 and marks html.kg-open), and hidden
+    // while one is open; the game's own overlay (.dt-root) covers everything, their chips too.
+    "html.kg-open .dt-chip,html.kg-open .dt-bubble{display:none}",
     ".dt-chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--dt-ink)}",
     ".dt-chiptrain{display:flex;align-items:flex-end;height:20px}.dt-chiptrain svg{display:block}",
     ".dt-chip-wait{background:#fff1c7}.dt-chip-lock{font-size:13px;color:#7a6f60}",
     ".dt-bump{animation:dt-bump .5s cubic-bezier(.2,1.6,.4,1)}",
     "@keyframes dt-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}",
     // the bubble
-    ".dt-bubble{position:fixed;left:10px;bottom:66px;z-index:2147482001;width:max-content;max-width:calc(100vw - 20px);padding:9px 14px 11px;",
+    ".dt-bubble{position:fixed;left:10px;bottom:66px;z-index:8901;width:max-content;max-width:calc(100vw - 20px);padding:9px 14px 11px;",
     "border-radius:18px;background:#fff;border:2.5px solid var(--dt-ink);box-shadow:0 4px 0 var(--dt-ink),0 10px 24px rgba(0,0,0,.25);",
     "transform-origin:24px calc(100% + 34px);animation:dt-rise .4s cubic-bezier(.2,1.4,.5,1) both;cursor:pointer}",
     ".dt-bubble::after{content:'';position:absolute;left:24px;bottom:-9px;width:14px;height:14px;background:#fff;",
@@ -1783,10 +1841,12 @@
     ".dt-trainbox{position:absolute;right:4%;bottom:calc(var(--g) + 9px);animation:dt-bob 1.5s ease-in-out infinite}",
     ".dt-train{display:flex;flex-wrap:nowrap;align-items:flex-end;width:max-content}.dt-car{display:block;flex:none;margin-left:-3px;overflow:visible}",
     "@keyframes dt-bob{50%{transform:translateY(-1.5px)}}",
-    ".dt-root .dt-wh{animation:dt-spin 1s linear infinite}@keyframes dt-spin{to{transform:rotate(360deg)}}",
-    ".dt-root .dt-rod{animation:dt-rod 1s linear infinite}",
+    // Wheels, rods and steam are SVG transforms, which repaint the whole car each frame: they move only while the
+    // train pulls in or out of a station. Idle, the train just bobs (an HTML-level transform, composited).
+    ".dt-arriving .dt-wh,.dt-leaving .dt-wh{animation:dt-spin 1s linear infinite}@keyframes dt-spin{to{transform:rotate(360deg)}}",
+    ".dt-arriving .dt-rod,.dt-leaving .dt-rod{animation:dt-rod 1s linear infinite}",
     "@keyframes dt-rod{0%{transform:translate(0,-3px)}25%{transform:translate(3px,0)}50%{transform:translate(0,3px)}75%{transform:translate(-3px,0)}100%{transform:translate(0,-3px)}}",
-    ".dt-puff{opacity:0}.dt-root .dt-puff{animation:dt-puff 1.8s ease-out infinite}.dt-root .dt-p2{animation-delay:.6s}.dt-root .dt-p3{animation-delay:1.2s}",
+    ".dt-puff{opacity:0}.dt-arriving .dt-puff,.dt-leaving .dt-puff{animation:dt-puff 1.8s ease-out infinite}.dt-root .dt-p2{animation-delay:.6s}.dt-root .dt-p3{animation-delay:1.2s}",
     "@keyframes dt-puff{0%{opacity:.95;transform:translate(0,0) scale(.4)}100%{opacity:0;transform:translate(-46px,-24px) scale(2)}}",
     ".dt-who{font-family:'Noto Color Emoji','Apple Color Emoji',sans-serif}",
     ".dt-stopped .dt-layer,.dt-stopped .dt-wh,.dt-stopped .dt-rod,.dt-stopped .dt-trainbox,.dt-paused *{animation-play-state:paused!important}",
@@ -1811,7 +1871,7 @@
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:14px;white-space:nowrap;overflow:hidden}",
     ".dt-coins{flex:none}.dt-coins b,.dt-cardbtn b{font-size:16px}.dt-coins.dt-bump{display:inline-block}",
     ".dt-cardbtn{flex:none;border:0;background:none;padding:0 2px;min-height:40px;font-size:14px;cursor:pointer}",
-    ".dt-lap{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#5a6078}",
+    ".dt-slap{position:absolute;right:8px;top:9px;font-size:11px;font-weight:700;color:#5a6078;background:var(--dt-paper2);border-radius:9px;padding:1px 7px}",
     ".dt-sep{flex:none;width:2px;height:18px;border-radius:1px;background:#d8cdb6}",
     ".dt-btn{min-height:44px;min-width:44px;padding:6px 14px;border-radius:14px;border:2.5px solid var(--dt-ink);background:#fff;",
     "box-shadow:0 3px 0 var(--dt-ink);font-size:15px;font-weight:700;cursor:pointer;line-height:1.2}",
@@ -1859,7 +1919,7 @@
     "@keyframes dt-fly{from{transform:translate(-150px,60px) rotate(-6deg)}to{transform:translate(calc(100vw + 20px),-50px) rotate(-12deg)}}",
     ".dt-flytxt{position:absolute;left:0;right:0;margin:0 auto;width:max-content;top:96px;white-space:nowrap;padding:8px 18px;border-radius:20px;background:#fff;",
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:18px;font-weight:700;animation:dt-pop .5s .3s cubic-bezier(.2,1.6,.4,1) both}",
-    ".dt-arr{position:absolute;left:0;top:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;",
+    ".dt-arr{position:absolute;left:0;top:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:60px 16px 16px;",
     "background:rgba(30,34,56,.38);animation:dt-fade .3s}",
     ".dt-sheet{position:relative;width:min(100%,330px);padding:14px 16px 16px;text-align:center;background:#fffdf6;border:3px solid var(--dt-ink);",
     "border-radius:22px;box-shadow:0 6px 0 var(--dt-ink);animation:dt-up .45s cubic-bezier(.2,1.3,.5,1);",
@@ -1888,7 +1948,13 @@
     ".dt-coinup{position:absolute;right:16px;top:58px;font-size:20px;font-weight:700;color:#b07a06;opacity:0}",
     ".dt-coinup.dt-on{animation:dt-coin 1s ease-out forwards}",
     "@keyframes dt-coin{0%{opacity:0;transform:translateY(16px) scale(.6)}35%{opacity:1;transform:translateY(-4px) scale(1.15)}100%{opacity:1;transform:none}}",
-    ".dt-go{width:100%;font-size:18px;margin-top:4px;animation:dt-fade .3s}",
+    ".dt-go{width:100%;font-size:18px;margin-top:4px;animation:dt-fade .3s}.dt-all{margin-top:10px;font-size:15px;background:#fff}",
+    ".dt-allsheet{max-height:100%;overflow-y:auto}.dt-allcoins{font-size:16px;margin:4px 0 10px}.dt-allcoins b{color:#b07a06;font-size:20px}",
+    ".dt-allgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 6px;margin-bottom:12px}",
+    ".dt-allone{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}.dt-allone .dt-stw{width:76px;height:76px}",
+    ".dt-allgift{position:absolute;right:2px;top:46px;font-size:24px}.dt-allname{font-size:13px;font-weight:700}.dt-allname rt{font-size:11px;font-weight:400}",
+    // while stamps are pressed, the top bar stays above the sheet with only ✕ in it (closing keeps what was pressed)
+    ".dt-busy .dt-top{z-index:31}.dt-busy .dt-top .dt-tb:not(.dt-x){visibility:hidden}.dt-busy .dt-cardbtn{pointer-events:none}",
     "@keyframes dt-pop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}",
     "@keyframes dt-up{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}",
     "@keyframes dt-fade{from{opacity:0}to{opacity:1}}",
@@ -1910,15 +1976,16 @@
     ".dt-regh{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;margin:0 4px 6px}",
     ".dt-regh i{width:14px;height:14px;border-radius:50%;background:var(--c)}.dt-regh small{font-weight:400;color:#7a7f92}",
     ".dt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 4px}",
-    ".dt-cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 0;min-height:96px;min-width:0;border:0;",
+    ".dt-cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0;min-height:104px;min-width:0;border:0;",
     "background:none;box-shadow:none;font-weight:400;border-radius:12px}",
     ".dt-stw{display:block;width:70px;height:70px;max-width:100%}",
     ".dt-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;width:66px;height:66px;max-width:100%;border-radius:50%;",
-    "border:2.5px dashed #cfc5b2;color:#b3a996;font-size:14px;line-height:1.1}.dt-empty small{font-size:8.5px}",
-    ".dt-cname{font-size:12px;font-weight:700}.dt-none .dt-cname{color:#c2b9a7}",
+    "border:2.5px dashed #cfc5b2;color:#c9bfab;font-size:15px;line-height:1.1}",
+    ".dt-cname{font-size:12px;font-weight:700;line-height:1.2}.dt-ckana{font-size:11px;line-height:1.2;color:#5a6078;white-space:nowrap}",
+    ".dt-none .dt-cname,.dt-none .dt-ckana{color:#b3a996}",
     ".dt-lapb{position:absolute;top:0;right:0;font-size:9px;color:#fff;border-radius:8px;padding:1px 5px;line-height:1.4}",
     ".dt-route{background:#fff;border:2.5px solid var(--dt-ink);border-radius:18px;padding:6px}.dt-route svg{display:block;width:100%;height:auto}",
-    ".dt-ping{animation:dt-ping 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}",
+    ".dt-ping{animation:dt-ping 1.6s ease-out 3;transform-box:fill-box;transform-origin:center}",
     ".dt-bigview{padding:22px 18px 18px}.dt-bigstamp{width:210px;height:210px;margin:0 auto 6px;animation:dt-pop .4s cubic-bezier(.2,1.5,.4,1)}",
     ".dt-bvname{font-size:26px;font-weight:700}.dt-bvname rt{font-size:12px}",
     ".dt-bvgift{display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;margin:6px 0}.dt-bvgift span{font-size:38px}",

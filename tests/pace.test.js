@@ -16,20 +16,24 @@ test("no history: segments are 12", () => {
   assert.equal(T.segLength(T.fresh(), "2026-10-14"), 12);
 });
 
-test("segment length is the median of the last 7 study days, clamped to 6..200", () => {
+test("segment length is the median of the last 7 study days, clamped to 6..2000", () => {
   const T = api();
   assert.equal(T.segLength(withDays(T, [10, 30, 20]), "2026-10-14"), 20);
   assert.equal(T.segLength(withDays(T, [10, 30, 20, 40]), "2026-10-14"), 25);
   assert.equal(T.segLength(withDays(T, [2, 3, 1]), "2026-10-14"), 6);
-  assert.equal(T.segLength(withDays(T, [900, 500, 1000]), "2026-10-14"), 200);
+  assert.equal(T.segLength(withDays(T, [900, 500, 1000]), "2026-10-14"), 900);
+  assert.equal(T.segLength(withDays(T, [3000, 2500, 2600]), "2026-10-14"), 2000);
   // only the last 7 study days count: the three old 100s fall out
   assert.equal(T.segLength(withDays(T, [100, 100, 100, 9, 9, 9, 9, 5, 5, 5]), "2026-10-14"), 9);
 });
 
-test("today's count is left out (the day is still going)", () => {
+test("today's count only raises a segment: a low day so far doesn't shorten it, a big one lengthens it", () => {
   const T = api(), s = withDays(T, [30, 30, 30]);
   s.perDay["2026-10-14"] = 2;
   assert.equal(T.segLength(s, "2026-10-14"), 30);
+  s.perDay["2026-10-14"] = 75;
+  assert.equal(T.segLength(s, "2026-10-14"), 75);
+  assert.equal(T.segLength(T.fresh(), "2026-10-14"), 12);
 });
 
 test("a segment's length is fixed when the train leaves the station", () => {

@@ -44,7 +44,7 @@ test("damage that can be mended is mended, keeping what is owned", () => {
   same(s.pos, { lap: 2, station: 0, step: 0, seg: 12 });
   same(s.queue, [{ lap: 1, station: 4 }]);
   same(s.stamps, { 3: 2 });
-  same(s.owned, { models: ["local", "shin"], colors: ["red"], cars: 4, passengers: ["🐶"] });
+  same(s.owned, { models: ["local", "shin", "nope"], colors: ["red"], cars: 4, passengers: ["🐶", "🦖"] });
   same(s.train, { model: "shin", color: "", cars: 4, seats: ["🐶", null, null] });
   same(s.days, []);
 });

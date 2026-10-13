@@ -11,7 +11,7 @@ test("a study day stamps one box; a full card pays +50, brings the next special 
   assert.equal(s.card.boxes.length, 9);
   const coins = s.coins;
   const ev = T.payCard(s, "c9", T.dayOf(n + 9));
-  same(ev.card, { full: true, special: "🐼", boxes: 10 });
+  same(ev.card, { full: true, special: "🐼", seated: true, boxes: 10 });
   assert.equal(s.coins, coins + 50);
   assert.equal(s.card.done, 1);
   same(s.card.boxes, []);
