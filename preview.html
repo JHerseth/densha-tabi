@@ -8,7 +8,8 @@
   A phone-sized stand-in for AnkiDroid's study screen: window.ankidroid is stubbed, a fake card back carries the slot,
   and the control strip (tap "▼ preview") answers cards. Each answer swaps the card the way AnkiDroid does: the old
   slot is removed, a new one is added and densha.js runs again. Works from file:// and in headless Chrome.
-  URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?card=N (first CardID).
+  URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?card=N (first CardID),
+  ?garden=URL (another card game on the same card: Kanpeki Garden's _garden.js with its #kg slot, to check they coexist).
 -->
 <style>
   html, body { margin: 0; height: 100%; }
@@ -43,7 +44,7 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
-  var DAY = "densha-preview-day";
+  var DAY = "densha-preview-day", garden = q.get("garden");
   window.ankidroid = { userAction: function () {} };     // what AnkiDroid's study screen defines
   /** The day offset (days) the strip moves; DT_CLOCK gives densha.js the moved time. */
   function offset() { return Number(localStorage.getItem(DAY)) || 0; }
@@ -61,11 +62,16 @@
   function show(id, done) {
     var w = words[id % words.length], card = document.getElementById("card");
     card.innerHTML = '<div class="note">かんじ の よみ</div><div class="q">' + w[0] + '</div><hr><div class="a">' + w[1] +
-      '</div><div id="densha" data-card="' + id + '"' + (dev.checked ? ' data-dev="1"' : "") + '></div>';
-    var s = document.createElement("script");
-    s.src = "densha.js";
-    s.onload = s.onerror = function () { s.remove(); if (done) done(); };
-    document.body.appendChild(s);
+      '</div><div id="densha" data-card="' + id + '"' + (dev.checked ? ' data-dev="1"' : "") + '></div>' +
+      (garden ? '<div id="kg" data-kg="garden" data-card="' + id + '"></div>' : "");
+    var srcs = ["densha.js"].concat(garden ? [garden] : []);
+    (function load(k) {
+      if (k >= srcs.length) { if (done) done(); return; }
+      var s = document.createElement("script");
+      s.src = srcs[k];
+      s.onload = s.onerror = function () { s.remove(); load(k + 1); };
+      document.body.appendChild(s);
+    })(0);
   }
   /** Answer n cards in a row, each a new CardID. */
   function answer(n) {

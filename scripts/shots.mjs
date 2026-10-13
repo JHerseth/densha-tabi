@@ -55,6 +55,19 @@ const SCENES = [
   { name: "23-topbar-99999-dev", save: save({ station: 5, coins: 99999 }), dev: true, run: open, wait: 800 },
   { name: "24-dev-panel", save: save({ station: 5 }), dev: true, run: open + tap(".dt-gear"), wait: 700 },
   { name: "25-flight", save: null, run: open, wait: 1700 },
+  { name: "26-stamp-queue-offer", save: save({ station: 9, step: 0, queue: [5, 6, 7, 8, 9].map((i) => ({ lap: 1, station: i })) }), run: open +
+    "setTimeout(()=>document.querySelector('.dt-scene').click(),900);setTimeout(()=>document.querySelector('.dt-arr').click(),1000);" +
+    "setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1300);setTimeout(()=>document.querySelector('.dt-scene').click(),3000);" +
+    "setTimeout(()=>document.querySelector('.dt-arr').click(),3100);", wait: 3800 },
+  { name: "27-stamp-queue-all", save: save({ station: 9, step: 0, queue: [5, 6, 7, 8, 9].map((i) => ({ lap: 1, station: i })) }), run: open +
+    "setTimeout(()=>document.querySelector('.dt-scene').click(),900);setTimeout(()=>document.querySelector('.dt-arr').click(),1000);" +
+    "setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1300);setTimeout(()=>document.querySelector('.dt-scene').click(),3000);" +
+    "setTimeout(()=>document.querySelector('.dt-arr').click(),3100);setTimeout(()=>document.querySelector('.dt-all').click(),3400);", wait: 4300 },
+  { name: "28-route-map-flight", save: save({ station: 46, step: 4 }), run: open + tap(".dt-tb") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);" +
+    "setTimeout(()=>document.querySelector('.dt-pbody').scrollTop=2000,500);", wait: 1100 },
+  { name: "29-garden-card", save: save({ station: 9 }), garden: true, card: true, run: "", wait: 1500 },
+  { name: "30-garden-open", save: save({ station: 9 }), garden: true, card: true, run: "setTimeout(()=>document.querySelector('.kg-chip').click(),1600);", wait: 2600 },
+  { name: "31-garden-dt-open", save: save({ station: 9 }), garden: true, card: true, run: "setTimeout(()=>document.querySelector('.dt-chip').click(),3200);", wait: 4200 },
 ];
 
 const only = process.argv.slice(2);
@@ -83,7 +96,8 @@ for (const sc of SCENES) {
   await send("Page.navigate", { url });
   await sleep(500);
   await evaluate(`localStorage.clear();` + (sc.save ? `localStorage.setItem("densha-tabi", ${JSON.stringify(JSON.stringify(sc.save))});` : ""));
-  await send("Page.navigate", { url: url + (sc.dev ? "&dev=1" : "") + "&card=" + (sc.card || !sc.save ? "5001" : "x") });
+  const garden = sc.garden ? "&garden=" + encodeURIComponent("file://" + join(ROOT, "..", "kanpeki-garden", "media", "_garden.js")) : "";
+  await send("Page.navigate", { url: url + (sc.dev ? "&dev=1" : "") + garden + "&card=" + (sc.card || !sc.save ? "5001" : "x") });
   await sleep(700);
   if (sc.run) await evaluate(sc.run);
   await sleep(sc.wait);

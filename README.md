@@ -34,6 +34,7 @@ other card games (it uses `#densha`, `dt-` classes and the `densha-tabi` localSt
 - Tests: `node --test` (Node 20+; `tests/harness.js` is a tiny fake DOM + localStorage running the script in `node:vm`).
 - Preview: open `preview.html` in a browser (works from `file://`). It stubs `window.ankidroid`, shows a fake card
   back with the slot, and the strip at the top answers N cards (each a new card swap, as in AnkiDroid), sets the
-  CardID and moves the day. `?dev=1` adds `data-dev`. For the fonts, put copies of `_kleeone-*.ttf` next to it.
+  CardID and moves the day. `?dev=1` adds `data-dev`; `?garden=<url of _garden.js>` puts Kanpeki Garden on the
+  same card to check the two games coexist. For the fonts, put copies of `_kleeone-*.ttf` next to it.
 - Screenshots: `node scripts/shots.mjs [name-filter]` drives headless Chromium at 360×740 (DPR 2) through a set of
   scenes into `out/screens/` (gitignored); `scripts/shot.mjs` takes a single shot of any URL.
