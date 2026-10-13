@@ -1,0 +1,10 @@
+{
+  "name": "densha-tabi",
+  "private": true,
+  "description": "でんしゃ たび: a study-reward train game on the back of Anki cards (AnkiDroid)",
+  "scripts": {
+    "build": "sh scripts/build.sh",
+    "test": "node --test",
+    "shots": "node scripts/shots.mjs"
+  }
+}
