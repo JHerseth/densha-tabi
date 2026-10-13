@@ -1,0 +1,21 @@
+<div class="tk">
+  <div class="tk-band"><span>とどうふけん</span><span>めいぶつ</span></div>
+  <div class="tk-body">
+    <div class="tk-emoji">{{Emoji}}</div>
+    <div class="tk-clue">{{Meibutsu}} が ゆうめい</div>
+    <div class="tk-answer">
+      <hr class="tk-rule">
+      <div class="tk-name">{{Name}}</div>
+      <div class="tk-yomi">{{Yomi}}</div>
+      <dl class="tk-rows">
+        <dt>ちほう</dt><dd>{{furigana:Region}}</dd>
+        <dt>けんちょう</dt><dd>{{furigana:Capital}}</dd>
+      </dl>
+      <div class="tk-fact">{{furigana:Fact}}</div>
+    </div>
+  </div>
+</div>
+
+<!-- でんしゃ たび: the game's slot. It only reads the card id, so it works on any card type. -->
+<div id="densha" data-card="{{CardID}}"></div>
+<script src="_densha.js"></script>

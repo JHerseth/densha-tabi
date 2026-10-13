@@ -1,0 +1,148 @@
+/* とどうふけん cards, styled as a train ticket (きっぷ). Klee One ships in collection.media (leading _ keeps it). */
+@font-face { font-family: "Klee One"; font-weight: 400; font-display: block; src: url("_kleeone-regular.ttf") format("truetype"); }
+@font-face { font-family: "Klee One"; font-weight: 600; font-display: block; src: url("_kleeone-semibold.ttf") format("truetype"); }
+
+:root {
+  --bg: #d9ece4;
+  --ticket: #fdf8ec;
+  --stripe: #2f8f6b;
+  --ink: #26323a;
+  --ink-soft: #66737a;
+  --punch: #d9ece4;
+}
+
+html, body { margin: 0; }
+
+.card {
+  font-family: "Klee One", "Noto Sans JP", sans-serif;
+  font-size: 18px;
+  text-align: center;
+  color: var(--ink);
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 18px 14px 96px;          /* the bottom leaves room for the games' chips */
+  background: repeating-linear-gradient(135deg, var(--bg) 0 14px, #d2e7de 14px 28px);
+}
+
+/* The ticket: a cream card with a green band, punched half-circles on its sides. */
+.tk {
+  position: relative;
+  max-width: 420px;
+  margin: 8px auto 14px;
+  background: var(--ticket);
+  border-radius: 14px;
+  padding: 0 0 18px;
+  box-shadow: 0 5px 0 #0002;
+  overflow: hidden;
+}
+
+.tk::before, .tk::after {
+  content: "";
+  position: absolute;
+  top: 58px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--punch);
+}
+.tk::before { left: -11px; }
+.tk::after { right: -11px; }
+
+.tk-band {
+  background: var(--stripe);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 7px 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tk-band span:last-child { opacity: 0.8; font-weight: 400; }
+
+.tk-body { padding: 14px 18px 0; }
+
+.tk-ask {
+  display: inline-block;
+  font-size: 15px;
+  color: var(--stripe);
+  border: 2px solid var(--stripe);
+  border-radius: 999px;
+  padding: 2px 14px;
+  margin: 4px 0 6px;
+}
+
+.tk-name {
+  font-weight: 600;
+  font-size: min(76px, 18vw);        /* 鹿児島県's four kanji still fit a 360 px phone */
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tk-yomi {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.tk-emoji {
+  font-size: 84px;
+  line-height: 1.2;
+}
+
+.tk-clue { font-size: 24px; font-weight: 600; }
+
+.tk-region { font-size: 18px; color: var(--ink-soft); margin-top: 6px; }
+.tk-region rt { font-size: 10px; }
+
+.tk-rule {
+  border: none;
+  border-top: 2px dashed #d8ccb0;
+  margin: 14px -18px;
+}
+
+.tk-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  text-align: left;
+  font-size: 18px;
+  align-items: baseline;
+}
+
+.tk-rows dt {
+  font-size: 13px;
+  color: #fff;
+  background: var(--stripe);
+  border-radius: 6px;
+  padding: 1px 8px;
+  text-align: center;
+}
+
+.tk-rows dd { margin: 0; }
+.tk-rows rt { font-size: 10px; color: var(--ink-soft); }
+
+.tk-fact {
+  font-size: 19px;
+  line-height: 2.1;
+  margin-top: 12px;
+  word-break: keep-all;              /* wrap only at the spaces between words (わかちがき) */
+}
+.tk-fact rt { font-size: 10px; color: var(--ink-soft); }
+
+.tk-answer { animation: tk-in 0.35s ease-out; }
+
+@keyframes tk-in {
+  from { transform: translateY(6px); opacity: 0.3; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-answer { animation: none; }
+}
+
+/* AnkiDroid's night mode: keep the ticket a ticket. */
+.nightMode .tk, .night_mode .tk { background: var(--ticket); color: var(--ink); }
+.nightMode.card, .night_mode.card { background: #1d2b27; }
+.nightMode .tk::before, .nightMode .tk::after, .night_mode .tk::before, .night_mode .tk::after { background: #1d2b27; }
