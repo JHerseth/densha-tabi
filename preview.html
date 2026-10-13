@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>でんしゃ たび preview</title>
+<!--
+  A phone-sized stand-in for AnkiDroid's study screen: window.ankidroid is stubbed, a fake card back carries the slot,
+  and the control strip (tap "▼ preview") answers cards. Each answer swaps the card the way AnkiDroid does: the old
+  slot is removed, a new one is added and densha.js runs again. Works from file:// and in headless Chrome.
+  URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?card=N (first CardID).
+-->
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #fdfdfb; color: #222; font: 16px/1.5 "Noto Sans JP", sans-serif; }
+  .card { padding: 72px 20px 120px; text-align: center; }
+  .q { font-size: 44px; margin: 10px 0 4px; }
+  .a { font-size: 22px; color: #c0392b; }
+  hr { border: 0; border-top: 1px solid #ddd; margin: 20px 0; }
+  .note { font-size: 13px; color: #888; }
+  #strip { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483600; font: 13px/1.3 sans-serif; }
+  #strip summary { list-style: none; cursor: pointer; padding: 4px 10px; background: #333; color: #fff; width: max-content;
+    border-radius: 0 0 8px 0; opacity: .75; }
+  #strip .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; background: #eee; border-bottom: 1px solid #bbb; }
+  #strip button, #strip input { font: inherit; padding: 6px 8px; }
+  #strip input[type=number] { width: 64px; }
+  #log { flex-basis: 100%; color: #555; }
+</style>
+</head>
+<body>
+<details id="strip" open>
+  <summary>▼ preview</summary>
+  <div class="row">
+    <button id="answer">こたえる ×</button><input id="n" type="number" min="1" max="500" value="1">
+    <label>CardID <input id="cid" type="number" value="1001"></label>
+    <button id="dminus">ひ −1</button><button id="dplus">ひ ＋1</button>
+    <label><input id="dev" type="checkbox"> data-dev</label>
+    <button id="wipe">セーブ けす</button>
+    <span id="log"></span>
+  </div>
+</details>
+<div id="card" class="card"></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var DAY = "densha-preview-day";
+  window.ankidroid = { userAction: function () {} };     // what AnkiDroid's study screen defines
+  /** The day offset (days) the strip moves; DT_CLOCK gives densha.js the moved time. */
+  function offset() { return Number(localStorage.getItem(DAY)) || 0; }
+  window.DT_CLOCK = function () { return Date.now() + offset() * 864e5; };
+  var cid = document.getElementById("cid"), dev = document.getElementById("dev"), log = document.getElementById("log");
+  if (q.get("card")) cid.value = q.get("card");
+  dev.checked = q.get("dev") === "1";
+  if (q.get("strip") === "0") document.getElementById("strip").open = false;
+  var words = [["山", "やま"], ["川", "かわ"], ["森", "もり"], ["空", "そら"], ["花", "はな"], ["雨", "あめ"], ["石", "いし"]];
+  function status() {
+    var o = offset();
+    log.textContent = "next CardID " + cid.value + (o ? " · day " + (o > 0 ? "+" : "") + o : "");
+  }
+  /** Show the back of card id: a new slot, and densha.js run again (as on a real card swap). */
+  function show(id, done) {
+    var w = words[id % words.length], card = document.getElementById("card");
+    card.innerHTML = '<div class="note">かんじ の よみ</div><div class="q">' + w[0] + '</div><hr><div class="a">' + w[1] +
+      '</div><div id="densha" data-card="' + id + '"' + (dev.checked ? ' data-dev="1"' : "") + '></div>';
+    var s = document.createElement("script");
+    s.src = "densha.js";
+    s.onload = s.onerror = function () { s.remove(); if (done) done(); };
+    document.body.appendChild(s);
+  }
+  /** Answer n cards in a row, each a new CardID. */
+  function answer(n) {
+    var id = +cid.value || 1;
+    (function step(k) {
+      cid.value = id + k + 1;
+      show(id + k, k + 1 < n ? function () { step(k + 1); } : status);
+    })(0);
+  }
+  document.getElementById("answer").onclick = function () { answer(Math.max(1, +document.getElementById("n").value || 1)); };
+  document.getElementById("dminus").onclick = function () { localStorage.setItem(DAY, offset() - 1); status(); };
+  document.getElementById("dplus").onclick = function () { localStorage.setItem(DAY, offset() + 1); status(); };
+  document.getElementById("wipe").onclick = function () {
+    if (confirm("でんしゃ たび の セーブ を けす？")) { localStorage.removeItem("densha-tabi"); localStorage.removeItem("densha-tabi-dev-day"); location.reload(); }
+  };
+  window.previewAnswer = answer;
+  window.previewShow = show;
+  show(+cid.value, status);
+  cid.value = +cid.value + 1;
+  status();
+})();
+</script>
+</body>
+</html>
