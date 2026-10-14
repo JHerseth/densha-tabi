@@ -491,10 +491,14 @@
   function prevOf(l, i, dir) { var n = l.stations.length; return l.type === "line" ? i - dir : (i + n - 1) % n; }
   /** The queued arrivals this script can show (an unknown line's stay queued, untouched). */
   function pending(s) { return s.queue.filter(function (a) { return !!lineOf(a.line); }); }
-  /** Switch the train to line id (owned and known): のりかえ. The other line's trip stays where it was. */
-  function board(s, id) {
+  /** Switch the train to line id (owned and known): のりかえ. The other line's trip stays where it was. A trip that
+   *  hasn't left its first station yet takes its first segment from the pace now (day: default today), so a newly
+   *  boarded line is as far between stations as the one the child came from. */
+  function board(s, id, day) {
     if (s.locked || !lineOf(id) || s.owned.lines.indexOf(id) < 0) return false;
     if (!s.lines[id]) s.lines[id] = freshTrip();
+    var p = s.lines[id].pos;
+    if (p.lap === 1 && p.station === 0 && p.step === 0) p.seg = segLength(s, day || today());
     s.line = id;
     return true;
   }
@@ -1549,14 +1553,21 @@
     // -- the top bar: coins, then buttons
     var top = el("div", "dt-top"), stat = el("div", "dt-stat");
     var coinsEl = el("span", "dt-coins");
+    // stamps waiting (e.g. a line bought for later): a button to press them now
+    var waitBtn = btn("dt-tb dt-waitbtn", "", function () { playArrivals(); });
     stat.append(coinsEl);
-    top.append(stat, el("span", "dt-grow"));
+    top.append(stat, waitBtn);     // on a narrow phone with big text, the buttons wrap to a second row rather than clip
     if (ctx.dev) top.append(btn("dt-tb dt-gear", "⚙", openDev));
     top.append(btn("dt-tb", "📖<small>スタンプ</small>", function () { openBook("stamps"); }),
       btn("dt-tb", "🏪<small>おみせ</small>", function () { openShop(); }),
       btn("dt-tb dt-x", "✕<small>とじる</small>", close));
     ui.append(top);
-    function renderTop() { coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>"; }
+    function renderTop() {
+      coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>";
+      var q = pending(s).length;
+      waitBtn.innerHTML = "🚉<small>" + q + "こ</small>";
+      waitBtn.hidden = !q || busy;
+    }
     function bumpCoins() { coinsEl.classList.remove("dt-bump"); later(function () { coinsEl.classList.add("dt-bump"); }, 10); }
 
     // -- the station sign (駅名標) and the progress bar
@@ -1611,6 +1622,7 @@
       if (busy || !q.length) return;
       busy = true;
       root.classList.add("dt-busy");
+      renderTop();
       var a = q[0];
       if (a.line === "japan" && a.station === 0) fly(function () { arrive(a); });
       else arrive(a);
@@ -1723,11 +1735,12 @@
         renderTrain();                       // after a terminus the train faces the way back
         scene.classList.remove("dt-at", "dt-stopped");
         scene.classList.add("dt-leaving");
-        if (turn) banner("🔁 おりかえし！");
+        if (turn && a.line === activeId(s)) banner("🔁 おりかえし！");
         later(function () { scene.classList.remove("dt-leaving"); stn.innerHTML = ""; }, reduced() ? 300 : 1500);
         busy = false;
         root.classList.remove("dt-busy");
-        if (pending(s).length) { busy = true; later(function () { busy = false; playArrivals(); }, reduced() ? 300 : 1200); return; }
+        if (pending(s).length) { busy = true; renderTop(); later(function () { busy = false; playArrivals(); }, reduced() ? 300 : 1200); return; }
+        renderTop();
         setRegion(nextOf(lineOf(activeId(s)), tripOf(s).pos));
         renderSign();
         sign.classList.remove("dt-flip");
@@ -1965,7 +1978,7 @@
             (FITS[l.id] ? ' <span class="dt-fits">にあう: ' + miniTrain({ model: FITS[l.id], color: "" }, 0.15) + "</span>" : "");
           var it = item(sketchSVG(l), '<span class="dt-lnm">' + ruby(l.name, l.yomi) + (t && t.full ? " 👑" : "") + '</span><span class="dt-linfo">' + info + "</span>",
             st, function () {
-              if (owned) { boardLine(l.id); draw(); }
+              if (owned) { P.close(); boardLine(l.id); }
               else askBuy("line", l.id, l.name);
             });
           it.classList.add("dt-lcard");
@@ -2339,11 +2352,12 @@
     // the top bar
     ".dt-ui{position:absolute;left:0;top:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;",
     "padding:6px 8px 10px;pointer-events:none}.dt-ui>*{pointer-events:auto}.dt-ui>.dt-hud{pointer-events:none}",
-    ".dt-top{display:flex;align-items:center;gap:4px;width:100%;flex:none}.dt-room{flex:1 1 0;min-height:0}",
+    ".dt-top{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px;width:100%;flex:none}.dt-top .dt-stat{margin-right:auto}.dt-room{flex:1 1 0;min-height:0}",
     ".dt-grow{flex:1 1 0;min-width:0}",
     ".dt-stat{display:flex;align-items:center;gap:5px;min-width:0;flex:0 1 auto;min-height:44px;padding:2px 12px;border-radius:22px;background:rgba(255,248,234,.94);",
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:14px;white-space:nowrap;overflow:hidden}",
-    ".dt-coins{flex:none;white-space:nowrap}.dt-coins b{font-size:17px}.dt-coins.dt-bump{display:inline-block}",
+    ".dt-waitbtn{background:#fff1c7!important;animation:dt-bump .6s 2}",
+    ".dt-waitbtn[hidden]{display:none}.dt-coins{flex:none;white-space:nowrap}.dt-coins b{font-size:17px}.dt-coins.dt-bump{display:inline-block}",
     
     ".dt-slap{position:absolute;right:8px;top:9px;font-size:11px;font-weight:700;color:#5a6078;background:var(--dt-paper2);border-radius:9px;padding:1px 7px}",
     

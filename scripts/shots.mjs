@@ -131,6 +131,12 @@ SCENES.push(
   { name: "L09-odakyu-map", save: save2({ line: "odakyu", station: 20, dir: -1, lap: 2, stamped: 30 }), run: book("ろせんず"), wait: 1000 },
   { name: "L10-tokaido-fuji", save: save2({ line: "tokaido", station: 4, train: { model: "shin", cars: 2 } }), run: open, wait: 900 },
   { name: "L11-yui-mono", save: save2({ line: "yui", station: 9, train: { model: "mono", cars: 1 } }), run: open, wait: 900 },
+  { name: "L13-waiting-button", save: save2({ line: "yamanote", station: 3, coins: 99999 }), dev: true, run: open +
+    "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);" +
+    "setTimeout(()=>[...document.querySelectorAll('.dt-lcard')].find(n=>n.textContent.includes('江ノ電')).querySelector('.dt-ibtn').click(),600);" +
+    "setTimeout(()=>document.querySelector('.dt-modal .dt-primary').click(),800);" +
+    "setTimeout(()=>[...document.querySelectorAll('.dt-modal .dt-btn')].find(b=>b.textContent.includes('あとで')).click(),1000);" +
+    "setTimeout(()=>document.querySelector('.dt-shop .dt-back').click(),1200);", wait: 1700, w: 360, h: 600, zoom: 1.3 },
   { name: "L12-enoden-back", save: save2({ line: "enoden", station: 9, dir: -1, lap: 2, train: { model: "tram", cars: 1 } }), run: open, wait: 900 },
 );
 for (const [w, h] of [[412, 690], [360, 600], [393, 640]]) {

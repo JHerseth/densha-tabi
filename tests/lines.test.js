@@ -222,3 +222,67 @@ test("the first full set of a line's stamps brings ぜんえき せいは！", (
   fan.find("dt-go")[0].click();
   assert.equal(root.find("dt-fan").length, 0);
 });
+
+test("a line boarded before it has moved takes its first segment from the pace, not 12", () => {
+  const T = api(), s = withLines(T, ["yamanote"]);
+  for (let d = 1; d <= 7; d++) s.perDay[T.dayOf(T.dayNo(DAY) - d)] = 80;
+  T.board(s, "yamanote", DAY);
+  assert.equal(s.lines.yamanote.pos.seg, 80);
+  // once it has moved, boarding again leaves its segment as it was
+  s.lines.yamanote.pos.step = 3;
+  s.perDay[T.dayOf(T.dayNo(DAY) - 1)] = 5;
+  T.board(s, "japan", DAY);
+  T.board(s, "yamanote", DAY);
+  assert.equal(s.lines.yamanote.pos.seg, 80);
+  // the day's bonus on the new line follows the pace too
+  const ev = T.payCard(s, "1", DAY);
+  assert.equal(ev.bonus, Math.round(80 * ev.k / 14));
+});
+
+test("a migrated save with every japan station stamped gets ぜんえき せいは once, on its first press", () => {
+  const stamps = Object.fromEntries(Array.from({ length: 47 }, (_, i) => [i, 1]));
+  const v1 = { v: 1, paid: {}, perDay: {}, days: [], pos: { lap: 2, station: 3, step: 0, seg: 12 }, queue: [{ lap: 2, station: 3 }, { lap: 2, station: 4 }],
+    stamps, coins: 0, card: { boxes: [], done: 0 }, owned: { models: ["local"], colors: [], cars: 0, passengers: [] }, train: { model: "local", color: "", cars: 0, seats: [] } };
+  const stored = { [KEY]: JSON.stringify(v1) };
+  page(stored, { slot: {}, now });
+  const T = api(), s = JSON.parse(stored[KEY]);
+  assert.equal(T.pressStamp(s).full, true);
+  assert.equal(s.coins, 110);
+  assert.equal(T.pressStamp(s).full, false);
+  assert.equal(s.coins, 120);
+});
+
+test("shop のる closes the shop; おりかえし shows only for the line the train is on; waiting stamps have a button", () => {
+  const T = api(), s = withLines(T, ["enoden", "yamanote"]);
+  s.queue = [{ line: "enoden", lap: 1, station: 14 }];
+  const stored = { [KEY]: JSON.stringify(s) };
+  const w = card(stored, "x", { now, slot: {} });
+  const root = openGame(w);
+  w.wait(6000);
+  root.find("dt-go")[0].click();                                   // terminus of 江ノ電, but the train is on japan
+  assert.equal(root.find("dt-banner").length, 0);
+  w.wait(3000);
+  // buy nothing, just board 山手線 from the shop's ろせん tab
+  root.find("dt-tb").filter((b) => b.innerHTML.includes("おみせ"))[0].click();
+  root.find("dt-lcard").filter((n) => n.textContent.includes("山手線"))[0].find("dt-ibtn")[0].click();
+  assert.equal(root.find("dt-shop").length, 0);
+  assert.equal(JSON.parse(stored[KEY]).line, "yamanote");
+  // a line bought for later: its first stamp waits, with a 🚉 button in the top bar
+  const s2 = T.fresh();
+  s2.queue = [];
+  s2.coins = 500;
+  const st2 = { [KEY]: JSON.stringify(s2) };
+  const w2 = card(st2, "x", { now, slot: {} });
+  const r2 = openGame(w2);
+  r2.find("dt-tb").filter((b) => b.innerHTML.includes("おみせ"))[0].click();
+  r2.find("dt-lcard").filter((n) => n.textContent.includes("江ノ電"))[0].find("dt-ibtn")[0].click();
+  r2.find("dt-modal")[0].find("dt-primary")[0].click();             // かう！
+  r2.find("dt-modal")[0].find("dt-btn").filter((b) => b.innerHTML.includes("あとで"))[0].click();
+  r2.find("dt-shop")[0].find("dt-back")[0].click();
+  const wb = r2.find("dt-waitbtn")[0];
+  assert.equal(wb.hidden, false);
+  assert.match(wb.innerHTML, /🚉<small>1こ<\/small>/);
+  wb.click();
+  w2.wait(6000);
+  assert.equal(JSON.parse(st2[KEY]).queue.length, 0);
+});
