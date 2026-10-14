@@ -187,9 +187,10 @@ for (const sc of SCENES) {
   const zs = sc.zoom ? (await send("Page.addScriptToEvaluateOnNewDocument", { source: TEXT_ZOOM(sc.zoom) })).result.identifier : null;
   await send("Page.navigate", { url });
   await sleep(500);
-  await evaluate(`localStorage.clear();` + (sc.save ? `localStorage.setItem("densha-tabi", ${JSON.stringify(JSON.stringify(sc.save))});` : ""));
+  const skey = sc.desktop ? "desk:densha-tabi" : "densha-tabi";       // desktop: the preview's stand-in add-on store
+  await evaluate(`localStorage.clear();` + (sc.save ? `localStorage.setItem("${skey}", ${JSON.stringify(JSON.stringify(sc.save))});` : ""));
   const garden = sc.garden ? "&garden=" + encodeURIComponent("file://" + join(ROOT, "..", "kanpeki-garden", "media", "_garden.js")) : "";
-  await send("Page.navigate", { url: url + (sc.dev ? "&dev=1" : "") + garden + "&card=" + (sc.card || !sc.save ? "5001" : "x") });
+  await send("Page.navigate", { url: url + (sc.dev ? "&dev=1" : "") + (sc.desktop ? "&desktop=1" : "") + garden + "&card=" + (sc.card || !sc.save ? "5001" : "x") });
   await sleep(700);
   if (sc.run) await evaluate(sc.run);
   await sleep(sc.wait);

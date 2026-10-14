@@ -7,21 +7,26 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import sys
 from typing import Any
 
 CONFIG_KEY = "densha_tabi"
-# the game's localStorage keys; nothing else is ever stored
+# the game's localStorage keys; only these are ever written (other keys already in the dict are kept as they are)
 ALLOWED_KEYS = ("densha-tabi", "densha-tabi-dev-day")
 MAX_VALUE = 256 * 1024
+# a message can't be longer than its value JSON-escaped (at most 6 characters per character) plus a little
+MAX_MESSAGE = 6 * MAX_VALUE + 64
 SET = "densha:set:"
 DEL = "densha:del:"
 
-_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inject.js")
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "inject.js"), encoding="utf-8") as _f:
+    TEMPLATE = _f.read()
+_TOKENS = re.compile(r"__(DATA|SEQS|CARD|MAX)__")
 
 
-def _template() -> str:
-    with open(_TEMPLATE_PATH, encoding="utf-8") as f:
-        return f.read()
+def log(message: str) -> None:
+    print("densha_tabi: " + message, file=sys.stderr)
 
 
 def script_json(value: Any) -> str:
@@ -35,12 +40,15 @@ def script_json(value: Any) -> str:
     )
 
 
-def stored(col: Any) -> dict[str, str]:
-    """The stored dict, keeping only allowed keys with string values (anything else is ignored, not deleted)."""
+def raw_config(col: Any) -> dict[str, Any]:
+    """The whole stored dict as it is (a non-dict counts as empty)."""
     raw = col.get_config(CONFIG_KEY, {}) if col is not None else {}
-    if not isinstance(raw, dict):
-        return {}
-    return {k: v for k, v in raw.items() if k in ALLOWED_KEYS and isinstance(v, str)}
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def stored(col: Any) -> dict[str, str]:
+    """What the game sees: the allowed keys with string values."""
+    return {k: v for k, v in raw_config(col).items() if k in ALLOWED_KEYS and isinstance(v, str)}
 
 
 class Bridge:
@@ -51,47 +59,62 @@ class Bridge:
         self.applied: dict[str, int] = {}
 
     def inject(self, text: str, card_id: int, kind: str, col: Any) -> str:
-        """card_will_show: on the reviewer's answer side only, prepend the store script to the card's HTML."""
-        if kind != "reviewAnswer" or col is None:
+        """card_will_show: on the reviewer's answer side only, prepend the store script to the card's HTML. Never
+        raises (a hook that raises is removed by Anki): on any error the card is shown unchanged."""
+        try:
+            if kind != "reviewAnswer" or col is None:
+                return text
+            values = {
+                "DATA": script_json(stored(col)),
+                "SEQS": script_json(self.applied),
+                "CARD": script_json(int(card_id)),
+                "MAX": script_json(MAX_VALUE),
+            }
+            # one pass, so a stored value that happens to contain a token is never substituted
+            js = _TOKENS.sub(lambda m: values[m.group(1)], TEMPLATE)
+            return "<script>" + js + "</script>" + text
+        except Exception as e:  # noqa: BLE001
+            log("injection failed: %r" % (e,))
             return text
-        js = (
-            _template()
-            .replace("__DATA__", script_json(stored(col)))
-            .replace("__SEQS__", script_json(self.applied))
-            .replace("__CARD__", script_json(int(card_id)))
-        )
-        return "<script>" + js + "</script>" + text
 
-    def handle(self, handled: tuple[bool, Any], message: str, is_reviewer: bool, col: Any) -> tuple[bool, Any]:
-        """webview_did_receive_js_message: our messages from the reviewer are handled (also when invalid, which are
-        dropped silently); everything else passes through untouched."""
+    def handle(self, handled: tuple[bool, Any], message: str, allowed_context: bool, col: Any) -> tuple[bool, Any]:
+        """webview_did_receive_js_message: our messages from an allowed context are handled (also when invalid, which
+        are dropped silently); everything else passes through untouched. Never raises."""
         if not isinstance(message, str) or not (message.startswith(SET) or message.startswith(DEL)):
             return handled
-        if not is_reviewer or col is None:
+        if not allowed_context or col is None:
             return handled
+        try:
+            self._apply(message, col)
+        except Exception as e:  # noqa: BLE001
+            log("write dropped: %r" % (e,))
+        return (True, None)
+
+    def _apply(self, message: str, col: Any) -> None:
+        if len(message) > MAX_MESSAGE:
+            return
         try:
             if message.startswith(SET):
                 key, value, seq = json.loads(message[len(SET):])
                 if not isinstance(value, str) or len(value.encode("utf-8")) > MAX_VALUE:
-                    return (True, None)
+                    return
             else:
                 key, seq = json.loads(message[len(DEL):])
                 value = None
         except (ValueError, TypeError):
-            return (True, None)
+            return
         if key not in ALLOWED_KEYS or not isinstance(seq, int) or isinstance(seq, bool):
-            return (True, None)
+            return
         if seq <= self.applied.get(key, -1):
-            return (True, None)                      # stale: a newer write for this key was applied already
+            return                                    # stale: a newer write for this key was applied already
         self.applied[key] = seq
-        data = stored(col)
+        data = raw_config(col)                        # change only this key; keep everything else as it was
         if value is None:
             if key not in data:
-                return (True, None)
+                return
             del data[key]
         else:
             if data.get(key) == value:
-                return (True, None)                  # nothing changed: don't mark the collection modified
+                return                                # nothing changed: don't mark the collection modified
             data[key] = value
-        col.set_config(CONFIG_KEY, data)             # not undoable; marks the collection modified, so it syncs
-        return (True, None)
+        col.set_config(CONFIG_KEY, data)              # not undoable; marks the collection modified, so it syncs

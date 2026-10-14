@@ -112,9 +112,9 @@ class AddonTest(unittest.TestCase):
         self.assertEqual(message(self.hooks, msg, object()), (False, None))   # not the reviewer: untouched
         self.assertEqual(self.col.get_config("densha_tabi")["densha-tabi"], '{"v":2}')
         self.assertEqual(message(self.hooks, msg, Reviewer()), (True, None))
-        self.assertEqual(self.col.get_config("densha_tabi"), {"densha-tabi": "A"})
+        self.assertEqual(self.col.get_config("densha_tabi"), {"densha-tabi": "A", "junk": "x"})   # other keys kept
         self.assertEqual(message(self.hooks, "densha:del:" + json.dumps(["densha-tabi", 11]), Reviewer()), (True, None))
-        self.assertEqual(self.col.get_config("densha_tabi"), {})
+        self.assertEqual(self.col.get_config("densha_tabi"), {"junk": "x"})
         self.assertEqual(self.col.conf["other"], 1)                            # nothing else touched
 
     def test_other_messages_pass_through(self):
@@ -167,6 +167,44 @@ class AddonTest(unittest.TestCase):
         self.mw.col = None
         self.assertEqual(show(self.hooks, "x", 1, "reviewAnswer"), "x")
         self.assertEqual(message(self.hooks, set_msg("densha-tabi", "a", 1), Reviewer()), (False, None))
+
+    def test_bad_messages_never_raise_or_unhook(self):
+        for m in ["densha:set:" + "[" * 100000, "densha:set:" + "x" * (7 * 256 * 1024), "densha:del:" + "{" * 50000]:
+            self.assertEqual(message(self.hooks, m, Reviewer()), (True, None))
+        self.assertEqual(len(self.hooks.webview_did_receive_js_message), 1)
+        self.assertEqual(message(self.hooks, set_msg("densha-tabi", "ok", 5), Reviewer()), (True, None))
+        self.assertEqual(self.col.get_config("densha_tabi")["densha-tabi"], "ok")
+
+    def test_injection_errors_leave_the_card_as_it_is(self):
+        self.assertEqual(show(self.hooks, "<p>x</p>", "not a number", "reviewAnswer"), "<p>x</p>")
+        self.col.get_config = lambda *a, **k: 1 / 0
+        self.assertEqual(show(self.hooks, "<p>y</p>", 3, "reviewAnswer"), "<p>y</p>")
+
+    def test_stored_values_that_look_like_placeholders_stay_as_they_are(self):
+        self.col.conf["densha_tabi"] = {"densha-tabi": "__SEQS__ __CARD__ __MAX__ __DATA__"}
+        out = show(self.hooks, "", 7, "reviewAnswer")
+        body = out[len("<script>"):-len("</script>")]
+        start = body.index("var data = ") + len("var data = ")
+        end = body.index(", applied = ")
+        self.assertEqual(json.loads(body[start:end])["densha-tabi"], "__SEQS__ __CARD__ __MAX__ __DATA__")
+        self.assertIn("card: 7 }", body)
+        self.assertIn("MAX = 262144", body)
+
+    def test_writes_keep_keys_this_version_doesnt_know(self):
+        self.col.conf["densha_tabi"] = {"densha-tabi": "a", "future-key": {"x": 1}}
+        message(self.hooks, set_msg("densha-tabi", "b", 1), Reviewer())
+        self.assertEqual(self.col.get_config("densha_tabi"), {"densha-tabi": "b", "future-key": {"x": 1}})
+        message(self.hooks, "densha:del:" + json.dumps(["densha-tabi", 2]), Reviewer())
+        self.assertEqual(self.col.get_config("densha_tabi"), {"future-key": {"x": 1}})
+
+    def test_late_writes_from_the_overview_or_deck_browser_are_kept(self):
+        self.mw.overview, self.mw.deckBrowser, self.mw.editor = object(), object(), object()
+        self.assertEqual(message(self.hooks, set_msg("densha-tabi", "o", 1), self.mw.overview), (True, None))
+        self.assertEqual(message(self.hooks, set_msg("densha-tabi", "d", 2), self.mw.deckBrowser), (True, None))
+        self.assertEqual(self.col.get_config("densha_tabi")["densha-tabi"], "d")
+        self.assertEqual(message(self.hooks, set_msg("densha-tabi", "e", 3), self.mw.editor), (False, None))
+        self.assertEqual(message(self.hooks, set_msg("densha-tabi", "n", 4), None), (False, None))
+        self.assertEqual(self.col.get_config("densha_tabi")["densha-tabi"], "d")
 
     def test_manifest(self):
         with open(os.path.join(ROOT, "addon", "manifest.json"), encoding="utf-8") as f:

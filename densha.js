@@ -2133,11 +2133,12 @@
     /** No animation while the page is hidden. */
     function vis() { root.classList.toggle("dt-paused", !!doc.hidden); }
     doc.addEventListener("visibilitychange", vis);
-    // On a big window (desktop Anki, a tablet) the game is a phone-sized column over a dimmed backdrop; clicking the
-    // backdrop closes it. Phones (upright or sideways) keep the full screen.
+    // Desktop Anki on a big window: the game is a phone-sized column over a dimmed backdrop; clicking the backdrop
+    // closes it. AnkiDroid (phones and tablets) keeps the full screen, with no backdrop at all.
     var backdrop = el("div", "dt-backdrop");
-    backdrop.addEventListener("click", function (e) { if (e && e.stopPropagation) e.stopPropagation(); close(); });
-    function wide() { return (g.innerWidth || 0) >= 700 && (g.innerHeight || 0) >= 560; }
+    backdrop.addEventListener("click", function () { close(); });
+    // desktop only (the AnkiDroid path is unchanged, tablets too); its taps never reach the page either
+    function wide() { return !!DESK && (g.innerWidth || 0) >= 700 && (g.innerHeight || 0) >= 560; }
     function layout() { var w = wide(); root.classList.toggle("dt-wide", w); backdrop.hidden = !w; }
     function onResize() { layout(); renderTrain(); }
     if (g.addEventListener) g.addEventListener("resize", onResize);
@@ -2151,13 +2152,16 @@
     doc.addEventListener("keydown", onKey);
     // AnkiDroid reads taps and swipes on the page for its own gestures: keep ours inside the game.
     ["touchstart", "touchend", "touchmove", "click"].forEach(function (t) {
-      root.addEventListener(t, function (e) { if (e && e.stopPropagation) e.stopPropagation(); }, { passive: true });
+      [root, backdrop].forEach(function (n) {
+        n.addEventListener(t, function (e) { if (e && e.stopPropagation) e.stopPropagation(); }, { passive: true });
+      });
     });
     // Answering swaps in the next card and removes the slot: close the game then.
     var watch = g.MutationObserver ? new g.MutationObserver(function () { if (!ctx.slot.isConnected) close(); }) : null;
     if (watch) watch.observe(doc.body, { childList: true, subtree: true });
 
-    doc.body.append(backdrop, root);
+    if (DESK) doc.body.append(backdrop);
+    doc.body.append(root);
     layout();
     syncIn(ctx);
     vis();

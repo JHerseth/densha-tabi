@@ -9,12 +9,12 @@ APKG=${2:-}
 
 sh scripts/build.sh
 node --test >/dev/null
-python3 -m unittest tests/addon_test.py 2>/dev/null
+python3 -m unittest tests/addon_test.py
 
-# the desktop add-on: addon/'s files (not __pycache__), its manifest stamped with this version
+# the desktop add-on: every file in addon/ (not __pycache__), its manifest stamped with this version
 ADDON=dist/densha-tabi-$VER.ankiaddon
 TMP=$(mktemp -d)
-cp addon/__init__.py addon/core.py addon/inject.js addon/config.md "$TMP/"
+for f in addon/*; do [ -f "$f" ] && cp "$f" "$TMP/"; done
 python3 -c 'import json,sys; m=json.load(open("addon/manifest.json",encoding="utf-8")); m["human_version"]=sys.argv[1]; json.dump(m,open(sys.argv[2],"w",encoding="utf-8"),ensure_ascii=False)' "$VER" "$TMP/manifest.json"
 mkdir -p dist
 rm -f "$ADDON"

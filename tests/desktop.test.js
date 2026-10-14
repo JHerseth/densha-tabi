@@ -9,9 +9,10 @@ const { Node, page, api, openGame, at, KEY, rerun, run } = require("./harness");
 const now = at(2026, 10, 14, 19);
 const INJECT = fs.readFileSync(path.join(__dirname, "..", "addon", "inject.js"), "utf8");
 /** The add-on's injected script for a card, as core.py fills it in (data: the stored dict, seqs: applied seqs). */
-function injected(data, seqs, card) {
+function injected(data, seqs, card, max = 256 * 1024) {
   const j = (v) => JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
-  return INJECT.replace("__DATA__", j(data)).replace("__SEQS__", j(seqs)).replace("__CARD__", j(card));
+  const vals = { DATA: j(data), SEQS: j(seqs), CARD: j(card), MAX: j(max) };
+  return INJECT.replace(/__(DATA|SEQS|CARD|MAX)__/g, (_, k) => vals[k]);
 }
 /** A desktop reviewer page showing the answer of card id: the add-on's script, then densha.js. The config dict
  *  (what the add-on stored) is updated from the bridge messages, as core.py would. */
@@ -130,4 +131,38 @@ test("a big window gets the phone column over a backdrop; phones (upright or sid
     assert.ok(!r.classList.contains("dt-wide"), width + "x" + height);
     assert.equal(p.document.body.find("dt-backdrop")[0].hidden, true);
   }
+  // AnkiDroid on a tablet: unchanged, full screen and no backdrop
+  const t = page({}, { now, slot: { card: "7" }, width: 1280, height: 800 });
+  const tr = openGame(t);
+  assert.ok(!tr.classList.contains("dt-wide"));
+  assert.equal(t.document.body.find("dt-backdrop").length, 0);
+});
+
+test("the backdrop keeps taps and clicks from reaching the page", () => {
+  const w = desktop({}, 5, { width: 1280, height: 800 });
+  openGame(w);
+  let reached = 0;
+  w.document.body.addEventListener("touchstart", () => reached++);
+  w.document.body.find("dt-backdrop")[0].fire("touchstart");
+  assert.equal(reached, 0);
+});
+
+test("a clock that went back can't make writes look stale: the sequence starts above what the add-on applied", () => {
+  const w = page({}, { ankidroid: false, storage: "none", now, slot: null });
+  const sent = [];
+  w.pycmd = (m) => sent.push(m);
+  const future = Date.now() * 1000 + 1e12;           // written when the clock was far ahead
+  run(w, injected({}, { "densha-tabi": future }, 1));
+  run(w, "DENSHA_STORE.setItem('densha-tabi', 'x')");
+  assert.ok(JSON.parse(sent[0].slice(11))[2] > future);
+});
+
+test("a save too big for the add-on fails like a full localStorage, and the game says so", () => {
+  const config = {};
+  const sent = [];
+  const w = page({}, { ankidroid: false, storage: "none", now, slot: { card: "5" },
+    before(x) { x.pycmd = (m) => sent.push(m); run(x, injected(config, {}, 5, 100)); } });
+  assert.equal(sent.length, 0);
+  const note = w.slot.find("dt-note")[0];
+  assert.match(note.textContent, /セーブが いっぱいだよ/);
 });

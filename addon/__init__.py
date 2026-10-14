@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .core import Bridge
+from .core import Bridge, log
 
 try:
     from aqt import gui_hooks, mw
@@ -23,12 +23,29 @@ bridge = Bridge()
 
 
 def _card_will_show(text: str, card: Any, kind: str) -> str:
-    return bridge.inject(text, card.id, kind, mw.col if mw else None)
+    try:
+        return bridge.inject(text, card.id, kind, mw.col if mw else None)
+    except Exception as e:  # noqa: BLE001  (Anki removes a hook that raises)
+        log("injection failed: %r" % (e,))
+        return text
+
+
+def _allowed(context: Any) -> bool:
+    """Our messages come from the reviewer; writes still queued as it leaves (the last card answered) arrive with the
+    overview or deck browser as context, which run no card content. Every other context is refused."""
+    if Reviewer is not None and isinstance(context, Reviewer):
+        return True
+    if mw is None or context is None:
+        return False
+    return any(context is getattr(mw, name, None) for name in ("overview", "deckBrowser"))
 
 
 def _on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tuple[bool, Any]:
-    is_reviewer = Reviewer is not None and isinstance(context, Reviewer)
-    return bridge.handle(handled, message, is_reviewer, mw.col if mw else None)
+    try:
+        return bridge.handle(handled, message, _allowed(context), mw.col if mw else None)
+    except Exception as e:  # noqa: BLE001
+        log("message failed: %r" % (e,))
+        return (True, None) if isinstance(message, str) and message.startswith("densha:") else handled
 
 
 def _profile_closed() -> None:
