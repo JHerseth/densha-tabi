@@ -1861,16 +1861,20 @@
         area.append(sec);
       });
     }
-    /** One station in the stamp book: its stamp (tap for the big view), or a dotted circle. */
+    /** One station in the stamp book: its stamp (tap for the big view), or a dotted circle. Every cell is the same
+     *  box (a div, so no button centring moves it): a fixed circle box first, the names under it; the stamp's tilt is
+     *  a transform and the lap badge lies over the corner, so neither takes room. */
     function cell(l, i) {
-      var st = l.stations[i], lap = tripOf(s, l.id).stamps[i], c;
+      var st = l.stations[i], lap = tripOf(s, l.id).stamps[i];
+      var c = htmlEl("div", "dt-cell" + (lap ? " dt-cgot" : " dt-none"), '<span class="dt-circ">' +
+        (lap ? '<span class="dt-stw" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(l.id, i, lap) + "</span>"
+          : '<span class="dt-empty"><b>' + (st[2] ? st[0] : st[0].slice(0, 3)) + "</b></span>") + "</span>" +
+        '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>" +
+        (lap > 1 ? '<span class="dt-lapb" style="background:' + inkFor(l.id, lap)[1] + '">' + T.lap(lap) + "</span>" : ""));
       if (lap) {
-        c = btn("dt-cell", '<span class="dt-stw" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(l.id, i, lap) + "</span>" +
-          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>" + (lap > 1 ? '<span class="dt-lapb" style="background:' + inkFor(l.id, lap)[1] + '">' + T.lap(lap) + "</span>" : ""),
-          function () { bigStamp(l, i); });
-      } else {
-        c = htmlEl("div", "dt-cell dt-none", '<span class="dt-empty"><b>' + (st[2] ? st[0] : st[0].slice(0, 3)) + "</b></span>" +
-          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>");
+        c.setAttribute("role", "button");
+        c.tabIndex = 0;
+        c.addEventListener("click", function (e) { if (e && e.stopPropagation) e.stopPropagation(); bigStamp(l, i); });
       }
       return c;
     }
@@ -2467,14 +2471,16 @@
     ".dt-regh{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;margin:0 4px 6px}",
     ".dt-regh i{width:14px;height:14px;border-radius:50%;background:var(--c)}.dt-regh small{font-weight:400;color:#7a7f92}",
     ".dt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 4px}",
-    ".dt-cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0;min-height:104px;min-width:0;border:0;",
-    "background:none;box-shadow:none;font-weight:400;border-radius:12px}",
-    ".dt-stw{display:block;width:70px;height:70px;max-width:100%}",
-    ".dt-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;width:66px;height:66px;max-width:100%;border-radius:50%;",
+    ".dt-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;padding:2px 0;min-width:0;",
+    "border-radius:12px}.dt-cgot{cursor:pointer}.dt-cgot:active{background:rgba(43,49,80,.06)}",
+    ".dt-circ{position:relative;display:block;flex:none;width:70px;height:70px;max-width:100%;margin-bottom:2px}",
+    ".dt-circ>.dt-stw,.dt-circ>.dt-empty{position:absolute;left:0;top:0;width:100%;height:100%}",
+    ".dt-stw{display:block;width:70px;height:70px;max-width:100%}.dt-circ .dt-stw{max-width:none}",
+    ".dt-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;",
     "border:2.5px dashed #cfc5b2;color:#c9bfab;font-size:15px;line-height:1.1}",
     ".dt-cname{font-size:12px;font-weight:700;line-height:1.2}.dt-ckana{font-size:11px;line-height:1.2;color:#5a6078;white-space:nowrap}",
     ".dt-none .dt-cname,.dt-none .dt-ckana{color:#b3a996}",
-    ".dt-lapb{position:absolute;top:0;right:0;font-size:9px;color:#fff;border-radius:8px;padding:1px 5px;line-height:1.4}",
+    ".dt-lapb{position:absolute;top:0;right:0;z-index:1;white-space:nowrap;font-size:9px;color:#fff;border-radius:8px;padding:1px 5px;line-height:1.4}",
     ".dt-route{background:#fff;border:2.5px solid var(--dt-ink);border-radius:18px;padding:6px}.dt-route svg{display:block;width:100%;height:auto}",
     ".dt-ping{animation:dt-ping 1.6s ease-out 3;transform-box:fill-box;transform-origin:center}",
     ".dt-bigview{padding:22px 18px 18px}.dt-bigstamp{width:210px;height:210px;margin:0 auto 6px;animation:dt-pop .4s cubic-bezier(.2,1.5,.4,1)}",

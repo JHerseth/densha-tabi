@@ -286,3 +286,29 @@ test("shop のる closes the shop; おりかえし shows only for the line the t
   w2.wait(6000);
   assert.equal(JSON.parse(st2[KEY]).queue.length, 0);
 });
+
+test("stamp book cells share one box: empty, lap-1 and lap-2 stamps line up", () => {
+  const T = api(), s = withLines(T, ["yamanote"]);
+  s.lines.japan.stamps = { 1: 1, 2: 3 };
+  s.lines.yamanote.stamps = { 0: 2 };
+  const w = card({ [KEY]: JSON.stringify(s) }, 1, { now });
+  const root = openGame(w);
+  root.find("dt-tb").filter((b) => b.innerHTML.includes("スタンプ"))[0].click();
+  const check = () => {
+    const cells = root.find("dt-cell");
+    assert.ok(cells.length > 0);
+    for (const c of cells) {
+      assert.equal(c.tagName, "div");                                  // no button: its content centring moved stamps down
+      assert.match(c.innerHTML, /^<span class="dt-circ">/);            // the circle box comes first, the same for all
+      assert.match(c.innerHTML, /<\/span><span class="dt-cname">/);
+    }
+    return cells;
+  };
+  const cells = check();
+  assert.ok(cells.some((c) => c.innerHTML.includes("dt-lapb")) && cells.some((c) => c.innerHTML.includes("dt-empty")));
+  cells.find((c) => c.innerHTML.includes("dt-lapb")).click();          // a stamped cell still opens the big view
+  assert.equal(root.find("dt-bigview").length, 1);
+  root.find("dt-modal")[0].click();
+  root.find("dt-lchip").find((c) => c.innerHTML.includes("山手線")).click();
+  check();
+});

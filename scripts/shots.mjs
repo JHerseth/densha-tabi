@@ -59,9 +59,9 @@ const SCENES = [
   { name: "11-arrive-platform", save: save({ station: 12, step: 0, queue: [{ lap: 1, station: 12 }] }), run: open, wait: 1900 },
   { name: "12-arrive-pon", save: save({ station: 12, step: 0, queue: [{ lap: 1, station: 12 }] }), run: open, wait: 3150 },
   { name: "13-arrive-done", save: save({ station: 12, step: 0, queue: [{ lap: 2, station: 12 }] }), run: open, wait: 5200 },
-  { name: "14-stamp-book", save: save({ station: 20, stamps: { 2: 2, 5: 3, 9: 4 } }), run: open + tap(".dt-tb"), wait: 700 },
-  { name: "15-stamp-big", save: save({ station: 20, stamps: { 2: 2 } }), run: open + tap(".dt-tb") + "setTimeout(()=>document.querySelectorAll('.dt-cell')[2].click(),300);", wait: 1100 },
-  { name: "16-route-map", save: save({ station: 20, step: 10 }), run: open + tap(".dt-tb") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);", wait: 900 },
+  { name: "14-stamp-book", save: save({ station: 20, stamps: { 2: 2, 5: 3, 9: 4 } }), run: open + tapText(".dt-tb", "スタンプ"), wait: 700 },
+  { name: "15-stamp-big", save: save({ station: 20, stamps: { 2: 2 } }), run: open + tapText(".dt-tb", "スタンプ") + "setTimeout(()=>document.querySelectorAll('.dt-cell')[2].click(),300);", wait: 1100 },
+  { name: "16-route-map", save: save({ station: 20, step: 10 }), run: open + tapText(".dt-tb", "スタンプ") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);", wait: 900 },
   { name: "17-stamp-card", save: save({ station: 20 }), run: open + tap(".dt-week"), wait: 700 },
   { name: "18-shop-models", save: Object.assign(save({ station: 20, coins: 75 }), { owned: { models: ["local"], colors: [], cars: 1, passengers: ["🐶", "🐱"] } }), run: open + tapText(".dt-tb", "おみせ"), wait: 700 },
   { name: "19-shop-colors", save: save({ station: 20 }), run: open + tapText(".dt-tb", "おみせ") + "setTimeout(()=>" + tapText(".dt-tab", "いろ").replace(/;$/, "") + ",200);", wait: 900 },
@@ -79,7 +79,7 @@ const SCENES = [
     "setTimeout(()=>document.querySelector('.dt-scene').click(),900);setTimeout(()=>document.querySelector('.dt-arr').click(),1000);" +
     "setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1300);setTimeout(()=>document.querySelector('.dt-scene').click(),3000);" +
     "setTimeout(()=>document.querySelector('.dt-arr').click(),3100);setTimeout(()=>document.querySelector('.dt-all').click(),3400);", wait: 4300 },
-  { name: "28-route-map-flight", save: save({ station: 46, step: 4 }), run: open + tap(".dt-tb") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);" +
+  { name: "28-route-map-flight", save: save({ station: 46, step: 4 }), run: open + tapText(".dt-tb", "スタンプ") + "setTimeout(()=>" + tapText(".dt-tab", "ろせんず").replace(/;$/, "") + ",200);" +
     "setTimeout(()=>document.querySelector('.dt-pbody').scrollTop=2000,500);", wait: 1100 },
   { name: "29-garden-card", save: save({ station: 9 }), garden: true, card: true, run: "", wait: 1500 },
   { name: "30-garden-open", save: save({ station: 9 }), garden: true, card: true, run: "setTimeout(()=>document.querySelector('.kg-chip').click(),1600);", wait: 2600 },
@@ -137,6 +137,9 @@ SCENES.push(
     "setTimeout(()=>document.querySelector('.dt-modal .dt-primary').click(),800);" +
     "setTimeout(()=>[...document.querySelectorAll('.dt-modal .dt-btn')].find(b=>b.textContent.includes('あとで')).click(),1000);" +
     "setTimeout(()=>document.querySelector('.dt-shop .dt-back').click(),1200);", wait: 1700, w: 360, h: 600, zoom: 1.3 },
+  { name: "L14-book-mixed", save: save2({ line: "yamanote", station: 6, stamped: 2, stamps: { 1: 3, 5: 2, 8: 1 } }), run: book(), wait: 900 },
+  { name: "L15-book-mixed-japan", save: Object.assign(save({ station: 0, stamps: { 2: 2, 4: 1, 9: 3, 12: 1 } }), {}), run: open + tapText(".dt-tb", "スタンプ"), wait: 900 },
+  { name: "zL-360x600-book-mixed", save: save({ station: 0, stamps: { 2: 2, 4: 1, 9: 3, 12: 1 } }), run: open + tapText(".dt-tb", "スタンプ") + "setTimeout(()=>document.querySelector('.dt-pbody').scrollTop=430,400);", wait: 1000, w: 360, h: 600, zoom: 1.3 },
   { name: "L12-enoden-back", save: save2({ line: "enoden", station: 9, dir: -1, lap: 2, train: { model: "tram", cars: 1 } }), run: open, wait: 900 },
 );
 for (const [w, h] of [[412, 690], [360, 600], [393, 640]]) {
