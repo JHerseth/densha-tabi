@@ -4,8 +4,13 @@ const assert = require("node:assert/strict");
 const { card, openGame, api, at, KEY } = require("./harness");
 
 const now = at(2026, 10, 14, 19);
+/** A stored save from a v: 1-shaped partial (pos, stamps, queue of the japan trip): written as v: 1, it loads
+ *  through the migration, as an old save would. */
 function seeded(o) {
   const s = api().fresh();
+  delete s.line; delete s.lines; s.v = 1;
+  s.pos = { lap: 1, station: 0, step: 0, seg: 12 }; s.stamps = {}; s.queue = [{ lap: 1, station: 0 }];
+  delete s.owned.lines;
   Object.assign(s, o);
   return { [KEY]: JSON.stringify(s) };
 }
@@ -29,7 +34,7 @@ test("queued arrivals are stamped on opening, one at a time and in order; taps s
   const s = JSON.parse(stored[KEY]);
   assert.equal(s.queue.length, 0);
   assert.equal(s.coins, 30);
-  assert.deepEqual(JSON.parse(JSON.stringify(s.stamps)), { 0: 1, 1: 1, 2: 1 });
+  assert.deepEqual(JSON.parse(JSON.stringify(s.lines.japan.stamps)), { 0: 1, 1: 1, 2: 1 });
   assert.match(root.find("dt-arr")[0].textContent, /青森|岩手/);
 });
 
@@ -51,5 +56,5 @@ test("the close button closes the game and the chip shows the steps left", () =>
   root.find("dt-x")[0].click();
   assert.equal(w.document.body.find("dt-root").length, 0);
   const s = JSON.parse(stored[KEY]);
-  assert.match(w.slot.find("dt-chip")[0].textContent, new RegExp("あと " + (s.pos.seg - s.pos.step)));
+  assert.match(w.slot.find("dt-chip")[0].textContent, new RegExp("あと " + (s.lines.japan.pos.seg - s.lines.japan.pos.step)));
 });

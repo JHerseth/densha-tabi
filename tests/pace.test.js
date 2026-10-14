@@ -39,33 +39,33 @@ test("today's count only raises a segment: a low day so far doesn't shorten it, 
 test("a segment's length is fixed when the train leaves the station", () => {
   const T = api(), s = withDays(T, [30, 30, 30]);
   s.days = Object.keys(s.perDay);
-  assert.equal(s.pos.seg, 12);                   // set at departure, before this history existed
+  assert.equal(s.lines.japan.pos.seg, 12);                   // set at departure, before this history existed
   T.payCard(s, "1", "2026-10-14");
-  assert.equal(s.pos.seg, 12);
-  s.pos.step = 11;
+  assert.equal(s.lines.japan.pos.seg, 12);
+  s.lines.japan.pos.step = 11;
   const arr = T.advance(s, 1, "2026-10-14");
   assert.equal(arr.length, 1);
-  assert.equal(s.pos.seg, 30);                   // the next one from the pace
+  assert.equal(s.lines.japan.pos.seg, 30);                   // the next one from the pace
 });
 
 test("overshoot carries over across several stations in one day, each queued", () => {
   const T = api(), s = T.fresh();
   s.queue = [];
-  s.pos = { lap: 1, station: 3, step: 10, seg: 12 };
+  s.lines.japan.pos = { lap: 1, station: 3, step: 10, seg: 12, dir: 1 };
   const arr = T.advance(s, 2 + 12 + 12 + 5, "2026-10-14");
   same(arr.map((a) => a.station), [4, 5, 6]);
-  same(s.queue, [{ lap: 1, station: 4 }, { lap: 1, station: 5 }, { lap: 1, station: 6 }]);
-  same(s.pos, { lap: 1, station: 6, step: 5, seg: 12 });
+  same(s.queue, [4, 5, 6].map((station) => ({ line: "japan", lap: 1, station })));
+  same(s.lines.japan.pos, { lap: 1, station: 6, step: 5, seg: 12, dir: 1 });
 });
 
 test("a big bonus on a tiny deck passes stations and queues them for the game", () => {
   const T = api(), s = T.fresh();
   s.queue = [];
-  s.pos = { lap: 1, station: 0, step: 5, seg: 6 };
+  s.lines.japan.pos = { lap: 1, station: 0, step: 5, seg: 6, dir: 1 };
   s.days = ["2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13"];
   const ev = T.payCard(s, "1", "2026-10-14");        // 1 + round(6 × 7 / 14) = 4 steps
   assert.equal(ev.steps, 4);
   assert.equal(ev.arrivals.length, 1);
   assert.equal(s.queue.length, 1);
-  assert.equal(s.pos.step, 3);
+  assert.equal(s.lines.japan.pos.step, 3);
 });

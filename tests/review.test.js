@@ -4,11 +4,23 @@ const assert = require("node:assert/strict");
 const { api, card, page, openGame, at, KEY } = require("./harness");
 
 const now = at(2026, 10, 14, 19);
-function seeded(o) { const s = api().fresh(); Object.assign(s, o); return { [KEY]: JSON.stringify(s) }; }
+/** A stored save from a v: 1-shaped partial (pos, stamps, queue of the japan trip): written as v: 1, it loads
+ *  through the migration, as an old save would. */
+function seeded(o) {
+  const s = api().fresh();
+  delete s.line; delete s.lines; s.v = 1;
+  s.pos = { lap: 1, station: 0, step: 0, seg: 12 }; s.stamps = {}; s.queue = [{ lap: 1, station: 0 }];
+  delete s.owned.lines;
+  Object.assign(s, o);
+  return { [KEY]: JSON.stringify(s) };
+}
 
 test("ids from a newer script are kept, drawn as something known, and the save isn't rewritten for them", () => {
   const s = api().fresh();
-  s.owned = { models: ["local", "maglev"], colors: ["gold"], cars: 0, passengers: ["🦄"] };
+  s.owned = { models: ["local", "maglev"], colors: ["gold"], cars: 0, passengers: ["🦄"], lines: ["japan", "subway9"] };
+  s.lines.subway9 = { anything: 1 };
+  s.line = "subway9";
+  s.queue.push({ line: "subway9", lap: 1, station: 99 });
   s.train = { model: "maglev", color: "gold", cars: 0, seats: ["🦄"] };
   const raw = JSON.stringify(s), stored = { [KEY]: raw };
   const w = page(stored, { slot: {}, now });

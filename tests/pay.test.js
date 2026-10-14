@@ -48,13 +48,13 @@ test("the daily bonus is round(segment × k / 14), on the day's first card", () 
   assert.equal(T.bonusFor(20, 3), 4);
   assert.equal(T.bonusFor(200, 7), 100);
   const s = T.fresh();
-  s.pos.seg = 20;
+  s.lines.japan.pos.seg = 20;
   s.days = ["2026-10-11", "2026-10-12", "2026-10-13"];
   const ev = T.payCard(s, "5", "2026-10-14");
   assert.equal(ev.k, 4);
   assert.equal(ev.bonus, 6);                  // round(20 × 4 / 14) = round(5.71)
   assert.equal(ev.steps, 7);
-  assert.equal(s.pos.step, 7);
+  assert.equal(s.lines.japan.pos.step, 7);
   assert.equal(s.card.boxes.length, 1);
   assert.equal(T.payCard(s, "6", "2026-10-14").bonus, 0);
 });
@@ -79,9 +79,9 @@ test("without data-card the chip shows but nothing moves", () => {
   const w = page(stored, { slot: {}, now: at(2026, 10, 14) });
   assert.equal(w.slot.find("dt-chip").length, 1);
   assert.equal(w.slot.find("dt-bubble").length, 0);
-  assert.equal(JSON.parse(stored[KEY]).pos.step, 0);
+  assert.equal(JSON.parse(stored[KEY]).lines.japan.pos.step, 0);
   page(stored, { slot: { card: "{{CardID}}" }, now: at(2026, 10, 14) });
-  assert.equal(JSON.parse(stored[KEY]).pos.step, 0);
+  assert.equal(JSON.parse(stored[KEY]).lines.japan.pos.step, 0);
 });
 
 test("the first card's bubble names the stamp card and the bonus; the chip counts down", () => {

@@ -2,7 +2,8 @@
 
 A little game on the back of Anki cards, for a child studying on a phone in AnkiDroid. Every card whose answer is
 shown moves a drawn train one step along Japan's 47 prefectures, 北海道 → 沖縄 and round again. Each station gives an
-eki stamp for the stamp book, a souvenir and coins for the train shop (models, paint, cars, animal passengers).
+eki stamp for the stamp book, a souvenir and coins for the shop: more lines to ride (山手線, 江ノ電, ゆいレール,
+小田急小田原線, 東海道新幹線) and the train itself (models, paint, cars, animal passengers).
 
 It knows nothing about the card but its id, so it works on any note type and any deck size: the distance between
 stations follows the player's own pace (one ordinary study day ≈ one station), and coins come from stations and
@@ -30,7 +31,9 @@ other card games (it uses `#densha`, `dt-` classes and the `densha-tabi` localSt
 
 ## Development
 
-- `densha.js` is the whole game (one dependency-free IIFE). `sh scripts/build.sh` copies it to `media/_densha.js`.
+- `densha.js` is the whole game (one dependency-free IIFE). `sh scripts/build.sh` first refreshes its line data
+  from `lines.json` (the block between `LINES-DATA:BEGIN/END`; edit `lines.json`, not that block), then copies it to
+  `media/_densha.js`. The lines to buy are described in [LINES.md](LINES.md).
 - Tests: `node --test` (Node 20+; `tests/harness.js` is a tiny fake DOM + localStorage running the script in `node:vm`).
 - Preview: open `preview.html` in a browser (works from `file://`). It stubs `window.ankidroid`, shows a fake card
   back with the slot, and the strip at the top answers N cards (each a new card swap, as in AnkiDroid), sets the

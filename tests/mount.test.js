@@ -63,7 +63,7 @@ test("the dev panel's buttons: coins, a past study day, steps, arrive now", () =
   w.wait(10000);
   const s = JSON.parse(stored[KEY]);
   assert.equal(s.queue.length, 0);
-  assert.equal(s.stamps[1], 1);
+  assert.equal(s.lines.japan.stamps[1], 1);
 });
 
 test("answering (the slot removed) closes the game", () => {

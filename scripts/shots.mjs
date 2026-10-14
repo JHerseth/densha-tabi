@@ -25,6 +25,22 @@ function save(o = {}) {
       passengers: ["🐶", "🐱", "🐰", "🐻", "🐼", "🦊"] },
     train: Object.assign({ model: "local", color: "", cars: 1, seats: ["🐶", "🐱", null, "🐰", "🐼", "🦊"] }, o.train || {}) };
 }
+/** A v: 2 save on line `line` at station, with every station before it stamped there (and japan up to 熊本). */
+function save2(o = {}) {
+  const s = save({ station: 42, coins: o.coins ?? 260, train: o.train });
+  const japan = { pos: Object.assign(s.pos, { dir: 1 }), stamps: s.stamps };
+  delete s.pos; delete s.stamps;
+  const line = o.line || "yamanote", st = o.station ?? 5, stamps = {};
+  for (let i = 0; i <= (o.stamped ?? st); i++) stamps[i] = 1;
+  Object.assign(stamps, o.stamps || {});
+  s.v = 2;
+  s.line = line;
+  s.lines = { japan, [line]: { pos: { lap: o.lap ?? 1, station: st, step: o.step ?? 6, seg: 20, dir: o.dir ?? 1 }, stamps } };
+  Object.assign(s.lines, o.more || {});
+  s.owned.lines = ["japan", line].concat(o.owns || []);
+  s.queue = o.queue || [];
+  return s;
+}
 const open = "document.querySelector('.dt-chip').click();";
 const tap = (sel) => `document.querySelector(${JSON.stringify(sel)}).click();`;
 const tapText = (sel, text) => `[...document.querySelectorAll(${JSON.stringify(sel)})].find(b=>b.textContent.includes(${JSON.stringify(text)})).click();`;
@@ -94,6 +110,38 @@ for (const [w, h] of [[412, 690], [360, 600], [393, 640]]) {
 SCENES.push({ name: "z-740x360-landscape", save: save({ station: 22, coins: 99999, train: { model: "shin", cars: 2 } }), dev: true, run: open, wait: 900, w: 740, h: 360, zoom: 1.3 });
 SCENES.push({ name: "z-412x690-shop", save: save({ station: 20, coins: 99999 }), dev: true, run: open + "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);", wait: 900, w: 412, h: 690, zoom: 1.3 });
 SCENES.push({ name: "z-412x690-card", save: save({ station: 20 }), run: open + tap(".dt-week"), wait: 800, w: 412, h: 690, zoom: 1.3 });
+
+const book = (tab) => open + tapText(".dt-tb", "スタンプ") + (tab ? "setTimeout(()=>" + tapText(".dt-tab", tab).replace(/;$/, "") + ",250);" : "");
+SCENES.push(
+  { name: "L01-shop-lines", save: save2({ line: "yamanote", station: 3, coins: 320, owns: ["enoden"], more: { enoden: { pos: { lap: 1, station: 2, step: 0, seg: 12, dir: 1 }, stamps: {}, full: true } } }),
+    run: open + "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);", wait: 900 },
+  { name: "L02-yamanote-main", save: save2({ line: "yamanote", station: 15, train: { model: "local", cars: 1 } }), run: open, wait: 900 },
+  { name: "L03-yamanote-ring", save: save2({ line: "yamanote", station: 15, step: 10 }), run: book("ろせんず"), wait: 1000 },
+  { name: "L04-enoden-seaside", save: save2({ line: "enoden", station: 6, train: { model: "tram", cars: 1, color: "" } }), run: open, wait: 900 },
+  { name: "L05-orikaeshi", save: save2({ line: "enoden", station: 14, step: 0, dir: -1, stamped: 12, train: { model: "tram", cars: 0 },
+    queue: [{ line: "enoden", lap: 1, station: 14 }] }), run: open + "setTimeout(()=>document.querySelector('.dt-scene').click(),600);" +
+    "setTimeout(()=>document.querySelector('.dt-arr').click(),800);setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1200);", wait: 2000 },
+  { name: "L06-orikaeshi-sheet", save: save2({ line: "enoden", station: 14, step: 0, dir: -1, stamped: 12, train: { model: "tram", cars: 0 },
+    queue: [{ line: "enoden", lap: 1, station: 14 }] }), run: open + "setTimeout(()=>document.querySelector('.dt-scene').click(),600);" +
+    "setTimeout(()=>document.querySelector('.dt-arr').click(),800);", wait: 1500 },
+  { name: "L07-zenneki-seiha", save: save2({ line: "enoden", station: 14, step: 0, dir: -1, stamped: 13, train: { model: "tram", cars: 0 },
+    queue: [{ line: "enoden", lap: 1, station: 14 }] }), run: open + "setTimeout(()=>document.querySelector('.dt-scene').click(),600);" +
+    "setTimeout(()=>document.querySelector('.dt-arr').click(),800);setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1200);", wait: 2600 },
+  { name: "L08-book-picker", save: save2({ line: "yamanote", station: 13, owns: ["yui"], stamps: { 2: 2 }, more: { yui: { pos: { lap: 1, station: 0, step: 0, seg: 12, dir: 1 }, stamps: { 0: 1 } } } }), run: book(), wait: 900 },
+  { name: "L09-odakyu-map", save: save2({ line: "odakyu", station: 20, dir: -1, lap: 2, stamped: 30 }), run: book("ろせんず"), wait: 1000 },
+  { name: "L10-tokaido-fuji", save: save2({ line: "tokaido", station: 4, train: { model: "shin", cars: 2 } }), run: open, wait: 900 },
+  { name: "L11-yui-mono", save: save2({ line: "yui", station: 9, train: { model: "mono", cars: 1 } }), run: open, wait: 900 },
+  { name: "L12-enoden-back", save: save2({ line: "enoden", station: 9, dir: -1, lap: 2, train: { model: "tram", cars: 1 } }), run: open, wait: 900 },
+);
+for (const [w, h] of [[412, 690], [360, 600], [393, 640]]) {
+  SCENES.push({ name: `zL-${w}x${h}-enoden-long`, save: save2({ line: "enoden", station: 3, coins: 99999, train: { model: "tram" } }), dev: true, run: open, wait: 900, w, h, zoom: 1.3 });
+  SCENES.push({ name: `zL-${w}x${h}-shop-lines`, save: save2({ line: "yamanote", station: 3, coins: 99999 }), dev: true,
+    run: open + "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);", wait: 900, w, h, zoom: 1.3 });
+  SCENES.push({ name: `zL-${w}x${h}-book`, save: save2({ line: "yamanote", station: 25, coins: 99999, owns: ["tokaido"] }), dev: true, run: book(), wait: 900, w, h, zoom: 1.3 });
+}
+SCENES.push({ name: "zL-412x690-fanfare", save: save2({ line: "enoden", station: 14, step: 0, dir: -1, stamped: 13, train: { model: "tram", cars: 0 },
+  queue: [{ line: "enoden", lap: 1, station: 14 }] }), run: open + "setTimeout(()=>document.querySelector('.dt-scene').click(),600);" +
+  "setTimeout(()=>document.querySelector('.dt-arr').click(),800);setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1200);", wait: 3600, w: 412, h: 690, zoom: 1.3 });
 
 const only = process.argv.slice(2);
 const port = 9300 + Math.floor(Math.random() * 500);

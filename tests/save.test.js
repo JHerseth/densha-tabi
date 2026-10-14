@@ -18,8 +18,8 @@ test("a save that isn't JSON locks the game: nothing pays, the chip says so, the
   assert.equal(w.document.body.find("dt-root").length, 0);
 });
 
-test("a save from a newer game (v: 2) is left exactly as it is", () => {
-  const raw = JSON.stringify({ v: 2, coins: 999, whatever: [1, 2] });
+test("a save from a newer game (v: 3) is left exactly as it is", () => {
+  const raw = JSON.stringify({ v: 3, coins: 999, whatever: [1, 2] });
   const stored = { [KEY]: raw };
   const w = card(stored, 5, { now });
   assert.equal(stored[KEY], raw);
@@ -41,10 +41,10 @@ test("damage that can be mended is mended, keeping what is owned", () => {
   page(stored, { slot: {}, now });
   const s = JSON.parse(stored[KEY]);
   assert.equal(s.coins, 0);
-  same(s.pos, { lap: 2, station: 0, step: 0, seg: 12 });
-  same(s.queue, [{ lap: 1, station: 4 }]);
-  same(s.stamps, { 3: 2 });
-  same(s.owned, { models: ["local", "shin", "nope"], colors: ["red"], cars: 4, passengers: ["🐶", "🦖"] });
+  same(s.lines.japan.pos, { lap: 2, station: 0, step: 0, seg: 12, dir: 1 });     // a v: 1 save, migrated then mended
+  same(s.queue, [{ line: "japan", lap: 1, station: 4 }]);
+  same(s.lines.japan.stamps, { 3: 2 });
+  same(s.owned, { models: ["local", "shin", "nope"], colors: ["red"], cars: 4, passengers: ["🐶", "🦖"], lines: ["japan"] });
   same(s.train, { model: "shin", color: "", cars: 4, seats: ["🐶", null, null] });
   same(s.days, []);
 });
@@ -73,7 +73,7 @@ test("every change is written at once (the page may be torn down any moment)", (
   w.wait(10000);                                   // the welcome stamp is pressed
   const s = JSON.parse(stored[KEY]);
   assert.equal(s.queue.length, 0);
-  assert.equal(s.stamps[0], 1);
+  assert.equal(s.lines.japan.stamps[0], 1);
   assert.equal(s.coins, 10);
   assert.ok(root);
 });

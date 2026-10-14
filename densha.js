@@ -20,9 +20,9 @@
   var doc = g.document;
 
   // ---- data -------------------------------------------------------------------------------------
-  var KEY = "densha-tabi", DEV_DAY_KEY = "densha-tabi-dev-day", V = 1;
+  var KEY = "densha-tabi", DEV_DAY_KEY = "densha-tabi-dev-day", V = 2;
   var DEFAULT_SEG = 12, MIN_SEG = 6, MAX_SEG = 2000;
-  var ARRIVAL_COINS = 10, CARD_COINS = 50, CARD_BOXES = 10;
+  var ARRIVAL_COINS = 10, CARD_COINS = 50, CARD_BOXES = 10, FULL_COINS = 100;
 
   /** The 47 stations in JIS order: [kanji, kana, souvenir emoji, souvenir kana]. */
   var STATIONS = [
@@ -44,6 +44,169 @@
     ["鹿児島", "かごしま", "🌋", "さくらじま"], ["沖縄", "おきなわ", "🍍", "パイナップル"]
   ];
   var N = STATIONS.length;
+
+  // ---- lines data: generated from lines.json by scripts/build.sh (edit lines.json, then build; not this block) ----
+  /* LINES-DATA:BEGIN */
+  var LINE_DATA = {
+    "yamanote": Object.assign({"name":"山手線","yomi":"やまのてせん","color":"#9acd32","type":"loop","price":200,"scenery":[[0,"kanto"]]}, { stations: [
+      ["東京","とうきょう","🍱","えきべん"],
+      ["神田","かんだ",null,null],
+      ["秋葉原","あきはばら","🎮","でんきがい"],
+      ["御徒町","おかちまち",null,null],
+      ["上野","うえの","🐼","パンダ"],
+      ["鶯谷","うぐいすだに",null,null],
+      ["日暮里","にっぽり",null,null],
+      ["西日暮里","にしにっぽり",null,null],
+      ["田端","たばた",null,null],
+      ["駒込","こまごめ",null,null],
+      ["巣鴨","すがも",null,null],
+      ["大塚","おおつか",null,null],
+      ["池袋","いけぶくろ","🐧","ペンギン"],
+      ["目白","めじろ",null,null],
+      ["高田馬場","たかだのばば",null,null],
+      ["新大久保","しんおおくぼ",null,null],
+      ["新宿","しんじゅく","🏙️","こうそうビル"],
+      ["代々木","よよぎ",null,null],
+      ["原宿","はらじゅく","🍭","カラフル スイーツ"],
+      ["渋谷","しぶや","🐕","ハチこう"],
+      ["恵比寿","えびす",null,null],
+      ["目黒","めぐろ",null,null],
+      ["五反田","ごたんだ",null,null],
+      ["大崎","おおさき",null,null],
+      ["品川","しながわ","🐬","すいぞくかん"],
+      ["高輪ゲートウェイ","たかなわゲートウェイ",null,null],
+      ["田町","たまち",null,null],
+      ["浜松町","はままつちょう",null,null],
+      ["新橋","しんばし","🚂","SLひろば"],
+      ["有楽町","ゆうらくちょう",null,null]
+    ] }),
+    "enoden": Object.assign({"name":"江ノ電","yomi":"えのでん","color":"#009a44","type":"line","price":150,"scenery":[[0,"kanto"],[3,"chugoku"]]}, { stations: [
+      ["藤沢","ふじさわ",null,null],
+      ["石上","いしがみ",null,null],
+      ["柳小路","やなぎこうじ",null,null],
+      ["鵠沼","くげぬま",null,null],
+      ["湘南海岸公園","しょうなんかいがんこうえん","🐠","すいぞくかん"],
+      ["江ノ島","えのしま","🏝️","えのしま"],
+      ["腰越","こしごえ",null,null],
+      ["鎌倉高校前","かまくらこうこうまえ","🌊","うみの みえる えき"],
+      ["七里ヶ浜","しちりがはま",null,null],
+      ["稲村ヶ崎","いなむらがさき",null,null],
+      ["極楽寺","ごくらくじ",null,null],
+      ["長谷","はせ","🙏","かまくらの だいぶつ"],
+      ["由比ヶ浜","ゆいがはま",null,null],
+      ["和田塚","わだづか",null,null],
+      ["鎌倉","かまくら","⛩️","つるがおか はちまんぐう"]
+    ] }),
+    "yui": Object.assign({"name":"ゆいレール","yomi":"ゆいレール","color":"#e8618c","type":"line","price":250,"scenery":[[0,"kyushu"]]}, { stations: [
+      ["那覇空港","なはくうこう","✈️","ひこうき"],
+      ["赤嶺","あかみね","⭐","にっぽんで いちばん みなみの えき"],
+      ["小禄","おろく",null,null],
+      ["奥武山公園","おうのやまこうえん",null,null],
+      ["壺川","つぼがわ",null,null],
+      ["旭橋","あさひばし",null,null],
+      ["県庁前","けんちょうまえ",null,null],
+      ["美栄橋","みえばし",null,null],
+      ["牧志","まきし","🏪","こくさいどおり"],
+      ["安里","あさと",null,null],
+      ["おもろまち","おもろまち",null,null],
+      ["古島","ふるじま",null,null],
+      ["市立病院前","しりつびょういんまえ",null,null],
+      ["儀保","ぎぼ",null,null],
+      ["首里","しゅり","🏯","しゅりじょう"],
+      ["石嶺","いしみね",null,null],
+      ["経塚","きょうづか",null,null],
+      ["浦添前田","うらそえまえだ",null,null],
+      ["てだこ浦西","てだこうらにし",null,null]
+    ] }),
+    "odakyu": Object.assign({"name":"小田急小田原線","yomi":"おだきゅう おだわらせん","color":"#2288cc","type":"line","price":300,"scenery":[[0,"kanto"],[38,"chubu"]]}, { stations: [
+      ["新宿","しんじゅく","🏙️","こうそうビル"],
+      ["南新宿","みなみしんじゅく",null,null],
+      ["参宮橋","さんぐうばし",null,null],
+      ["代々木八幡","よよぎはちまん",null,null],
+      ["代々木上原","よよぎうえはら",null,null],
+      ["東北沢","ひがしきたざわ",null,null],
+      ["下北沢","しもきたざわ","🎸","おんがくの まち"],
+      ["世田谷代田","せたがやだいた",null,null],
+      ["梅ヶ丘","うめがおか",null,null],
+      ["豪徳寺","ごうとくじ","🐱","まねきねこ"],
+      ["経堂","きょうどう",null,null],
+      ["千歳船橋","ちとせふなばし",null,null],
+      ["祖師ヶ谷大蔵","そしがやおおくら",null,null],
+      ["成城学園前","せいじょうがくえんまえ",null,null],
+      ["喜多見","きたみ",null,null],
+      ["狛江","こまえ",null,null],
+      ["和泉多摩川","いずみたまがわ",null,null],
+      ["登戸","のぼりと",null,null],
+      ["向ヶ丘遊園","むこうがおかゆうえん","🌹","ばらえん"],
+      ["生田","いくた",null,null],
+      ["読売ランド前","よみうりランドまえ","🎢","ゆうえんち"],
+      ["百合ヶ丘","ゆりがおか",null,null],
+      ["新百合ヶ丘","しんゆりがおか",null,null],
+      ["柿生","かきお",null,null],
+      ["鶴川","つるかわ",null,null],
+      ["玉川学園前","たまがわがくえんまえ",null,null],
+      ["町田","まちだ","🐿️","リスえん"],
+      ["相模大野","さがみおおの",null,null],
+      ["小田急相模原","おだきゅうさがみはら",null,null],
+      ["相武台前","そうぶだいまえ",null,null],
+      ["座間","ざま",null,null],
+      ["海老名","えびな",null,null],
+      ["厚木","あつぎ",null,null],
+      ["本厚木","ほんあつぎ",null,null],
+      ["愛甲石田","あいこういしだ",null,null],
+      ["伊勢原","いせはら",null,null],
+      ["鶴巻温泉","つるまきおんせん","♨️","おんせん"],
+      ["東海大学前","とうかいだいがくまえ",null,null],
+      ["秦野","はだの","🏔️","たんざわの やま"],
+      ["渋沢","しぶさわ",null,null],
+      ["新松田","しんまつだ",null,null],
+      ["開成","かいせい",null,null],
+      ["栢山","かやま",null,null],
+      ["富水","とみず",null,null],
+      ["螢田","ほたるだ",null,null],
+      ["足柄","あしがら",null,null],
+      ["小田原","おだわら","🏯","おだわらじょう"]
+    ] }),
+    "tokaido": Object.assign({"name":"東海道新幹線","yomi":"とうかいどう しんかんせん","color":"#1a5fb4","type":"line","price":400,"scenery":[[0,"kanto"],[3,"chubu"],[14,"kinki"]]}, { stations: [
+      ["東京","とうきょう","🍱","えきべん"],
+      ["品川","しながわ",null,null],
+      ["新横浜","しんよこはま","🍜","ラーメン はくぶつかん"],
+      ["小田原","おだわら","🏯","おだわらじょう"],
+      ["熱海","あたみ","♨️","おんせん"],
+      ["三島","みしま",null,null],
+      ["新富士","しんふじ","🗻","ふじさん"],
+      ["静岡","しずおか","🍵","おちゃ"],
+      ["掛川","かけがわ",null,null],
+      ["浜松","はままつ","🐟","うなぎ"],
+      ["豊橋","とよはし",null,null],
+      ["三河安城","みかわあんじょう",null,null],
+      ["名古屋","なごや","🍤","えびフライ"],
+      ["岐阜羽島","ぎふはしま",null,null],
+      ["米原","まいばら",null,null],
+      ["京都","きょうと","⛩️","じんじゃ"],
+      ["新大阪","しんおおさか","🐙","たこやき"]
+    ] })
+  };
+  /* LINES-DATA:END */
+
+  /** Every line: the 47-prefecture trip (japan: a loop, with the flight from 沖縄 to 北海道) and the lines to buy.
+   *  type: "japan" | "loop" (round forever, a lap per round) | "line" (there and back; each end-to-end run a lap).
+   *  stations: [kanji, kana, souvenir emoji or null, souvenir name or null]; scenery: [[from station, region id]]. */
+  var LINES = [{ id: "japan", name: "にっぽん いっしゅう", yomi: "にっぽん いっしゅう", short: "にっぽん", color: "#e0523f",
+    type: "japan", price: 0, stations: STATIONS, scenery: null }].concat(Object.keys(LINE_DATA).map(function (k) {
+    var d = LINE_DATA[k];
+    return { id: k, name: d.name, yomi: d.yomi, short: d.name, color: d.color, type: d.type === "loop" ? "loop" : "line",
+      price: d.price, stations: d.stations, scenery: d.scenery };
+  }));
+  /** The line with id, or null for an id this script doesn't know (kept in the save, not run). */
+  function lineOf(id) { return LINES.filter(function (l) { return l.id === id; })[0] || null; }
+  /** The region (scenery set) for station i of line l. */
+  function sceneKeyOf(l, i) {
+    if (l.type === "japan") return regionOf(i).id;
+    var key = "kanto";
+    (l.scenery || []).forEach(function (r) { if (i >= r[0] && SCENES[r[1]]) key = r[1]; });
+    return key;
+  }
 
   /** Regions for scenery and the route map: id, kana name, first and last station index, line colour. */
   var REGIONS = [
@@ -81,6 +244,8 @@
     { id: "sky", name: "みずいろ", c: "#4cb4e6" }, { id: "blue", name: "あお", c: "#3460c8" },
     { id: "purple", name: "むらさき", c: "#8c58d0" }, { id: "pink", name: "ピンク", c: "#f37cab" }
   ];
+  /** The model that suits each line best (a hint in the shop). */
+  var FITS = { yamanote: "local", enoden: "tram", yui: "mono", odakyu: "local", tokaido: "shin" };
   var COLOR_PRICE = 20, CAR_PRICE = 30, MAX_CARS = 4, PASSENGER_PRICE = 15;
   /** Passengers for sale, and the special ones a full stamp card brings (in this order). */
   var PASSENGERS = [["🐶", "いぬ"], ["🐱", "ねこ"], ["🐰", "うさぎ"], ["🐻", "くま"], ["🐹", "ハムスター"],
@@ -139,25 +304,45 @@
 
   // ---- save -------------------------------------------------------------------------------------
   /* localStorage "densha-tabi", JSON:
-   * { v: 1,
+   * { v: 2,
    *   paid:   { "<cardId>": "YYYY-MM-DD" }  the day each card last paid; pruned to today and yesterday on write
-   *   perDay: { "YYYY-MM-DD": n }           cards paid per day, the last 30 days: the pace
+   *   perDay: { "YYYY-MM-DD": n }           cards paid per day, the last 30 days: the pace (shared by all lines)
    *   days:   ["YYYY-MM-DD", ...]           study days, sorted and unique, ever
-   *   pos:    { lap, station, step, seg }   at/after station 0..46, step steps into a segment of seg steps
-   *   queue:  [{ lap, station }]            arrivals not yet stamped in the game, oldest first
-   *   stamps: { "<station>": lap }          the best (highest) lap stamped at each station
+   *   line:   "<line id>"                   the line the train runs on now
+   *   lines:  { "<line id>": {              each line's own trip, kept while another line runs:
+   *             pos: { lap, station, step, seg, dir },  at/after station, step steps into a segment of seg steps,
+   *                                                     dir +1/-1 (there-and-back lines; loops always +1)
+   *             stamps: { "<station>": lap },           the best (highest) lap stamped at each station
+   *             full: true } }                          once every station has a stamp (the +100 was paid)
+   *   queue:  [{ line, lap, station }]      arrivals not yet stamped in the game, oldest first
    *   coins:  n
    *   card:   { boxes: [day, ...], done }   the stamp card in progress (one box per study day), cards completed
-   *   owned:  { models: [id], colors: [id], cars: n, passengers: [emoji] }
+   *   owned:  { models: [id], colors: [id], cars: n, passengers: [emoji], lines: [id] }
    *   train:  { model, color ("" = the model's own), cars, seats: [emoji|null by window] } }
-   * A new save starts at 北海道 with its stamp waiting: the train flew there (as it does on every lap), so the first
-   * opening already has a ポン！ to press. Coins for an arrival are paid when its stamp is pressed, with the ＋10 the
-   * child sees then. A save that can't be read (not JSON, not an object, another v) is never written over. */
+   * v: 1 had pos, stamps and queue for the one trip; they become line japan's (migrate). A v: 1 script locks on
+   * v: 2, as on any v it doesn't know, so it never writes over it.
+   * A new trip starts at its first station with that stamp waiting (for japan: the train flew to 北海道, as it does on
+   * every lap), so boarding has a ポン！ to press at once. Coins for an arrival are paid when its stamp is pressed, with
+   * the ＋10 the child sees then. A save that can't be read (not JSON, not an object, another v) is never written over. */
   function fresh() {
-    return { v: V, paid: {}, perDay: {}, days: [], pos: { lap: 1, station: 0, step: 0, seg: DEFAULT_SEG },
-      queue: [{ lap: 1, station: 0 }], stamps: {}, coins: 0, card: { boxes: [], done: 0 },
-      owned: { models: ["local"], colors: [], cars: 0, passengers: [] },
+    return { v: V, paid: {}, perDay: {}, days: [], line: "japan", lines: { japan: freshTrip() },
+      queue: [{ line: "japan", lap: 1, station: 0 }], coins: 0, card: { boxes: [], done: 0 },
+      owned: { models: ["local"], colors: [], cars: 0, passengers: [], lines: ["japan"] },
       train: { model: "local", color: "", cars: 0, seats: [] } };
+  }
+  /** A line's trip before it starts: at its first station, heading on. */
+  function freshTrip() { return { pos: { lap: 1, station: 0, step: 0, seg: DEFAULT_SEG, dir: 1 }, stamps: {} }; }
+  /** A v: 1 save as v: 2 (in place): its trip becomes line japan's; nothing else changes. */
+  function migrate(s) {
+    var pos = isObj(s.pos) ? s.pos : {};
+    pos.dir = 1;
+    s.lines = { japan: { pos: pos, stamps: isObj(s.stamps) ? s.stamps : {} } };
+    s.line = "japan";
+    s.queue = (Array.isArray(s.queue) ? s.queue : []).map(function (a) { if (isObj(a)) a.line = "japan"; return a; });
+    if (isObj(s.owned)) s.owned.lines = ["japan"];
+    delete s.pos;
+    delete s.stamps;
+    s.v = 2;
   }
   /** A locked, empty save: nothing pays or is stored. nostore: there's no usable localStorage at all. */
   function locked(nostore) {
@@ -175,6 +360,7 @@
     if (raw == null) return fresh();
     try {
       var s = JSON.parse(raw);
+      if (isObj(s) && s.v === 1) migrate(s);
       if (!isObj(s) || s.v !== V) return locked();
       tidy(s);
       return s;
@@ -228,23 +414,22 @@
   /** Mend every field the game reads so nothing throws and nothing owned is lost. Whether anything changed. */
   function tidy(s) {
     var before = JSON.stringify(s), f = fresh();
-    ["paid", "perDay", "stamps", "pos", "card", "owned", "train"].forEach(function (k) { if (!isObj(s[k])) s[k] = f[k]; });
+    ["paid", "perDay", "lines", "card", "owned", "train"].forEach(function (k) { if (!isObj(s[k])) s[k] = f[k]; });
     ["days", "queue"].forEach(function (k) { if (!Array.isArray(s[k])) s[k] = []; });
     if (typeof s.coins !== "number" || !isFinite(s.coins) || s.coins < 0) s.coins = Math.max(0, Number(s.coins) || 0);
     s.coins = Math.floor(s.coins);
     Object.keys(s.paid).forEach(function (k) { if (!isDay(s.paid[k])) delete s.paid[k]; });
     Object.keys(s.perDay).forEach(function (k) { if (!isDay(k) || !isInt(s.perDay[k], 1, 1e6)) delete s.perDay[k]; });
     s.days = s.days.filter(function (d, i, a) { return isDay(d) && a.indexOf(d) === i; }).sort();
-    var p = s.pos;
-    if (!isInt(p.lap, 1, 1e6)) p.lap = 1;
-    if (!isInt(p.station, 0, N - 1)) p.station = 0;
-    if (!isInt(p.seg, MIN_SEG, MAX_SEG)) p.seg = DEFAULT_SEG;
-    if (!isInt(p.step, 0, p.seg - 1)) p.step = 0;
-    s.queue = s.queue.filter(function (a) { return isObj(a) && isInt(a.lap, 1, 1e6) && isInt(a.station, 0, N - 1); })
-      .map(function (a) { return { lap: a.lap, station: a.station }; });
-    Object.keys(s.stamps).forEach(function (k) {
-      if (!/^\d+$/.test(k) || +k >= N || !isInt(s.stamps[k], 1, 1e6)) delete s.stamps[k];
-    });
+    // every line this script knows gets a sound trip; a line it doesn't know (a newer script's) is kept as it is
+    Object.keys(s.lines).forEach(function (id) { if (lineOf(id)) tidyTrip(s, id); });
+    if (!s.lines.japan) s.lines.japan = freshTrip();
+    if (typeof s.line !== "string") s.line = "japan";
+    s.queue = s.queue.filter(function (a) {
+      if (!isObj(a) || typeof a.line !== "string" || !isInt(a.lap, 1, 1e6) || !isInt(a.station, 0, 1e4)) return false;
+      var l = lineOf(a.line);
+      return !l || a.station < l.stations.length;
+    }).map(function (a) { return { line: a.line, lap: a.lap, station: a.station }; });
     if (!Array.isArray(s.card.boxes)) s.card.boxes = [];
     s.card.boxes = s.card.boxes.filter(isDay).slice(0, CARD_BOXES - 1);
     if (!isInt(s.card.done, 0, 1e6)) s.card.done = 0;
@@ -258,6 +443,9 @@
     o.colors = list(o.colors, str);
     if (!isInt(o.cars, 0, MAX_CARS)) o.cars = Math.min(MAX_CARS, Math.max(0, Math.floor(Number(o.cars)) || 0));
     o.passengers = list(o.passengers, str);
+    o.lines = list(o.lines, str);
+    if (o.lines.indexOf("japan") < 0) o.lines.unshift("japan");
+    o.lines.forEach(function (id) { if (lineOf(id) && !isObj(s.lines[id])) s.lines[id] = freshTrip(); });
     var t = s.train;
     if (o.models.indexOf(t.model) < 0) t.model = "local";
     if (t.color !== "" && o.colors.indexOf(t.color) < 0) t.color = "";
@@ -267,6 +455,48 @@
       return o.passengers.indexOf(x) >= 0 && a.indexOf(x) === i ? x : null;
     });
     return JSON.stringify(s) !== before;
+  }
+
+  /** Mend line id's trip in s.lines (a line this script knows). */
+  function tidyTrip(s, id) {
+    var l = lineOf(id), n = l.stations.length, t = s.lines[id];
+    if (!isObj(t)) t = s.lines[id] = freshTrip();
+    if (!isObj(t.pos)) t.pos = freshTrip().pos;
+    if (!isObj(t.stamps)) t.stamps = {};
+    var p = t.pos;
+    if (!isInt(p.lap, 1, 1e6)) p.lap = 1;
+    if (!isInt(p.station, 0, n - 1)) p.station = 0;
+    if (!isInt(p.seg, MIN_SEG, MAX_SEG)) p.seg = DEFAULT_SEG;
+    if (!isInt(p.step, 0, p.seg - 1)) p.step = 0;
+    if (l.type !== "line" || (p.dir !== 1 && p.dir !== -1)) p.dir = 1;
+    if (l.type === "line" && p.station === n - 1) p.dir = -1;      // at an end the train always heads back in
+    if (l.type === "line" && p.station === 0) p.dir = 1;
+    Object.keys(t.stamps).forEach(function (k) {
+      if (!/^\d+$/.test(k) || +k >= n || !isInt(t.stamps[k], 1, 1e6)) delete t.stamps[k];
+    });
+    if (t.full !== undefined && t.full !== true) delete t.full;
+  }
+
+  // ---- lines: which runs, where it is ------------------------------------------------------------
+  /** The id of the line the train runs on: s.line, or japan if s.line is one this script doesn't know. */
+  function activeId(s) { return lineOf(s.line) && s.lines[s.line] ? s.line : "japan"; }
+  /** The trip of line id (default: the active one). */
+  function tripOf(s, id) { return s.lines[id || activeId(s)]; }
+  /** The station the train heads for on line l from pos p. */
+  function nextOf(l, p) {
+    var n = l.stations.length;
+    return l.type === "line" ? p.station + p.dir : (p.station + 1) % n;
+  }
+  /** The station before station i on line l when arriving in direction dir (for the bubble's line). */
+  function prevOf(l, i, dir) { var n = l.stations.length; return l.type === "line" ? i - dir : (i + n - 1) % n; }
+  /** The queued arrivals this script can show (an unknown line's stay queued, untouched). */
+  function pending(s) { return s.queue.filter(function (a) { return !!lineOf(a.line); }); }
+  /** Switch the train to line id (owned and known): のりかえ. The other line's trip stays where it was. */
+  function board(s, id) {
+    if (s.locked || !lineOf(id) || s.owned.lines.indexOf(id) < 0) return false;
+    if (!s.lines[id]) s.lines[id] = freshTrip();
+    s.line = id;
+    return true;
   }
 
   // ---- movement and rewards (pure: they change s, the caller saves) -----------------------------
@@ -291,15 +521,25 @@
   /** Move the train on by steps; each station reached is queued (overshoot carries on, and each new segment's
    *  length is fixed as it starts). After 沖縄 the next lap starts at 北海道. Returns the arrivals. */
   function advance(s, steps, day) {
-    var p = s.pos, out = [];
+    var id = activeId(s), l = lineOf(id), p = tripOf(s, id).pos, n = l.stations.length, out = [];
     p.step += Math.max(0, Math.floor(steps) || 0);
     while (p.step >= p.seg) {
       p.step -= p.seg;
-      p.station++;
-      if (p.station >= N) { p.station = 0; p.lap++; }
-      var a = { lap: p.lap, station: p.station };
-      s.queue.push(a);
-      out.push({ lap: a.lap, station: a.station });
+      var from = p.station, turn = false;
+      if (l.type === "line") {
+        // there and back: the end station is one arrival (one stamp, with the lap of the run that ends there),
+        // then the train turns round and the next run is the next lap
+        p.station += p.dir;
+        var lap = p.lap;
+        if (p.station === n - 1 || p.station === 0) { p.dir = -p.dir; p.lap++; turn = true; }
+        s.queue.push({ line: id, lap: lap, station: p.station });
+        out.push({ line: id, lap: lap, station: p.station, from: from, turn: turn });
+      } else {
+        p.station++;
+        if (p.station >= n) { p.station = 0; p.lap++; }
+        s.queue.push({ line: id, lap: p.lap, station: p.station });
+        out.push({ line: id, lap: p.lap, station: p.station, from: from, turn: false });
+      }
       p.seg = segLength(s, day);
     }
     return out;
@@ -332,9 +572,9 @@
     if (!s || s.locked || cardId == null || cardId === "") return null;
     cardId = String(cardId);
     if (s.paid[cardId] === day) return null;
-    var p = s.pos;
-    var ev = { day: day, first: false, k: 0, bonus: 0, steps: 1, card: null,
-      from: { lap: p.lap, station: p.station, step: p.step, seg: p.seg }, arrivals: [] };
+    var id = activeId(s), p = tripOf(s, id).pos;
+    var ev = { day: day, line: id, first: false, k: 0, bonus: 0, steps: 1, card: null,
+      from: { lap: p.lap, station: p.station, step: p.step, seg: p.seg, dir: p.dir }, arrivals: [] };
     s.paid[cardId] = day;
     s.perDay[day] = (s.perDay[day] || 0) + 1;
     if (s.days.indexOf(day) < 0) {
@@ -347,17 +587,25 @@
       ev.card = stampBox(s, day);
     }
     ev.arrivals = advance(s, ev.steps, day);
-    ev.to = { lap: p.lap, station: p.station, step: p.step, seg: p.seg };
+    ev.to = { lap: p.lap, station: p.station, step: p.step, seg: p.seg, dir: p.dir };
     prune(s, day);
     return ev;
   }
-  /** Press the oldest waiting stamp: it becomes the station's stamp if its lap is the best yet, and pays +10. */
+  /** Press the oldest waiting stamp (of a line this script knows): it becomes the station's stamp on that line if
+   *  its lap is the best yet, and pays +10. The first time every station of a line has a stamp: +100 more, once
+   *  (full: true on the result and on the trip). */
   function pressStamp(s) {
-    if (s.locked || !s.queue.length) return null;
-    var a = s.queue.shift(), best = s.stamps[a.station] || 0;
-    if (a.lap > best) s.stamps[a.station] = a.lap;
+    if (s.locked) return null;
+    var k = -1;
+    for (var i = 0; i < s.queue.length; i++) if (lineOf(s.queue[i].line)) { k = i; break; }
+    if (k < 0) return null;
+    var a = s.queue.splice(k, 1)[0], l = lineOf(a.line);
+    if (!s.lines[a.line]) s.lines[a.line] = freshTrip();
+    var t = s.lines[a.line], best = t.stamps[a.station] || 0, full = false;
+    if (a.lap > best) t.stamps[a.station] = a.lap;
     s.coins += ARRIVAL_COINS;
-    return { lap: a.lap, station: a.station, best: Math.max(best, a.lap), first: !best };
+    if (!t.full && Object.keys(t.stamps).length >= l.stations.length) { t.full = true; s.coins += FULL_COINS; full = true; }
+    return { line: a.line, lap: a.lap, station: a.station, best: Math.max(best, a.lap), first: !best, full: full };
   }
 
   // ---- shop (pure) ------------------------------------------------------------------------------
@@ -374,8 +622,9 @@
     for (var i = 0; i < n; i++) if (!t.seats[i]) { t.seats[i] = e; return true; }
     return false;
   }
-  /** What an item costs, or 0 if it's free / owned. kind: model | color | car | pass. */
+  /** What an item costs. kind: line | model | color | car | pass. */
   function priceOf(kind, id) {
+    if (kind === "line") return lineOf(id) ? lineOf(id).price : 0;
     if (kind === "model") return modelOf(id).price;
     if (kind === "color") return COLOR_PRICE;
     if (kind === "car") return CAR_PRICE;
@@ -387,14 +636,17 @@
     if (kind === "model") return o.models.indexOf(id) >= 0;
     if (kind === "color") return id === "" || o.colors.indexOf(id) >= 0;
     if (kind === "car") return o.cars >= MAX_CARS;
+    if (kind === "line") return o.lines.indexOf(id) >= 0;
     return o.passengers.indexOf(id) >= 0;
   }
-  /** Buy an item and put it to use at once. Returns true if bought. Nothing owned is ever taken away. */
+  /** Buy an item and put it to use at once (a line: its trip is ready at its first station, that stamp waiting;
+   *  boarding it is the child's choice, see board). Returns true if bought. Nothing owned is ever taken away. */
   function buy(s, kind, id) {
     if (s.locked || owns(s, kind, id)) return false;
     if (kind === "model" && !MODELS.some(function (m) { return m.id === id; })) return false;
     if (kind === "color" && !colorOf(id)) return false;
     if (kind === "pass" && !PASSENGERS.some(function (p) { return p[0] === id; })) return false;
+    if (kind === "line" && (!lineOf(id) || id === "japan")) return false;
     var cost = priceOf(kind, id);
     if (s.coins < cost) return false;
     s.coins -= cost;
@@ -402,6 +654,10 @@
     if (kind === "model") { o.models.push(id); t.model = id; }
     else if (kind === "color") { o.colors.push(id); t.color = id; }
     else if (kind === "car") { o.cars++; t.cars = o.cars; }
+    else if (kind === "line") {
+      o.lines.push(id);
+      if (!s.lines[id]) { s.lines[id] = freshTrip(); s.queue.push({ line: id, lap: 1, station: 0 }); }
+    }
     else { o.passengers.push(id); autoSeat(s, id); }
     return true;
   }
@@ -440,7 +696,7 @@
     return stampBox(s, d);
   }
   /** Arrive at the next station now. */
-  function devArrive(s, day) { return advance(s, s.pos.seg - s.pos.step, day); }
+  function devArrive(s, day) { var p = tripOf(s).pos; return advance(s, p.seg - p.step, day); }
 
   // ---- art: trains ------------------------------------------------------------------------------
   // Each car is an inline SVG side view facing right, wheels on y = h (the rail). The body uses the train's paint
@@ -628,7 +884,7 @@
       glass("M16 24Q7 25 6 32V42H16Z") + glass("M126 24Q135 25 136 32V42H126Z") +
       win(22, 25, 26, 16, 3, s[0]) + win(57, 25, 26, 16, 3, s[1]) + win(92, 25, 26, 16, 3, s[2]) +
       (lead ? circ(134, 60, 3.2, "#ffe9a0", ' stroke="#c99f3a" stroke-width="1"') + rect(48, 14, 44, 7, 2, "#2b2f3a") +
-        '<text x="70" y="19.6" font-size="5.6" fill="#ffd36a" text-anchor="middle" font-weight="700">でんしゃ たび</text>' : "") };
+        '<text class="dt-trtxt" x="70" y="19.6" font-size="5.6" fill="#ffd36a" text-anchor="middle" font-weight="700">でんしゃ たび</text>' : "") };
   }
 
   /** The paint for a train: body colour, stripe (white once painted, so it shows on any paint), SL coach colour. */
@@ -658,8 +914,11 @@
   /** Ink filters, one per lap colour: the stamp is drawn black, then this turns it into slightly speckled,
    *  rough-edged ink of that colour (the emoji become ink silhouettes, as on a real eki stamp). */
   function inkDefs() {
-    return '<svg class="dt-defs" width="0" height="0" aria-hidden="true"><defs>' + INKS.map(function (c, i) {
-      return '<filter id="dt-ink' + (i + 1) + '" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">' +
+    var inks = INKS.map(function (c, i) { return ["dt-ink" + (i + 1), c]; }).concat(LINES.filter(function (l) { return l.id !== "japan"; })
+      .map(function (l) { return ["dt-ink-" + l.id, l.color]; }));
+    return '<svg class="dt-defs" width="0" height="0" aria-hidden="true"><defs>' + inks.map(function (x, i) {
+      var c = x[1];
+      return '<filter id="' + x[0] + '" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">' +
         '<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="' + (3 + i) + '" result="n"/>' +
         '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
         '<feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.6 0 0 0 2.8" result="m"/>' +
@@ -669,15 +928,26 @@
   }
   /** A tilt for a stamp, the same every time for that station and lap: -7..7 degrees. */
   function tiltOf(i, lap) { return ((i * 37 + lap * 11 + 5) % 15) - 7; }
-  /** An eki stamp: double ring, souvenir, station kanji and kana, in the lap's ink. */
-  function stampSVG(i, lap) {
-    var st = STATIONS[i], k = st[0], fs = k.length > 2 ? 17 : 21, ks = st[1].length > 5 ? 7.4 : 8.6;
-    return '<svg class="dt-stamp" viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#dt-ink' + Math.min(lap, 5) + ')">' +
+  /** A stamp's ink: on a bought line the first run is in the line's colour; after that (and on the japan trip)
+   *  the lap's colour. Returns [filter id, colour]. */
+  function inkFor(lineId, lap) {
+    var l = lineOf(lineId);
+    if (l && l.id !== "japan" && lap <= 1) return ["dt-ink-" + l.id, l.color];
+    return ["dt-ink" + Math.min(Math.max(lap, 1), 5), inkOf(lap)];
+  }
+  /** A small train, for the stamps of stations without a souvenir. */
+  var TRAIN_MARK = '<path fill-rule="evenodd" d="M30 24H66Q74 24 75 32L77 41H27V30Q27 24 30 24ZM32 28V34H40V28ZM44 28V34H52V28ZM56 28V34H64V28Z"/>' +
+    '<circle cx="36" cy="43" r="2.6"/><circle cx="66" cy="43" r="2.6"/><path d="M24 46H80" stroke="#000" stroke-width="1.4"/>';
+  /** An eki stamp of station i on line lineId: double ring, souvenir (or a train), station kanji and kana. */
+  function stampSVG(lineId, i, lap) {
+    var l = lineOf(lineId) || LINES[0], st = l.stations[i], k = st[0], kl = k.length, yl = st[1].length;
+    var fs = kl <= 2 ? 21 : kl === 3 ? 17 : Math.min(16, 62 / kl), ks = Math.min(8.6, 52 / yl);
+    return '<svg class="dt-stamp" viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#' + inkFor(lineId, lap)[0] + ')">' +
       circ(50, 50, 46, "none", ' stroke="#000" stroke-width="4.4"') + circ(50, 50, 40.5, "none", ' stroke="#000" stroke-width="1.5"') +
-      '<text x="50" y="41" font-size="25" text-anchor="middle">' + st[2] + "</text>" +
+      (st[2] ? '<text x="50" y="41" font-size="25" text-anchor="middle">' + st[2] + "</text>" : TRAIN_MARK) +
       '<path d="M24 47H76" stroke="#000" stroke-width="1.2" stroke-dasharray="2 2.4"/>' +
-      '<text x="50" y="' + (k.length > 2 ? 65 : 67) + '" font-size="' + fs + '" text-anchor="middle" font-weight="700" class="dt-sk">' + k + "</text>" +
-      '<text x="50" y="80" font-size="' + ks + '" text-anchor="middle" font-weight="700">' + st[1] + "</text>" +
+      '<text x="50" y="' + (kl > 2 ? 65 : 67) + '" font-size="' + fs.toFixed(1) + '" text-anchor="middle" font-weight="700" class="dt-sk">' + k + "</text>" +
+      '<text x="50" y="80" font-size="' + ks.toFixed(1) + '" text-anchor="middle" font-weight="700">' + st[1] + "</text>" +
       '<text x="14" y="53" font-size="7" text-anchor="middle">★</text><text x="86" y="53" font-size="7" text-anchor="middle">★</text>' +
       "</g></svg>";
   }
@@ -701,6 +971,25 @@
     return '<svg viewBox="0 0 60 60" aria-hidden="true"><g fill="none" stroke="#e0453c" stroke-width="3" stroke-linecap="round">' +
       '<path d="M31 30C31 27.5 34.5 27.5 34.5 31C34.5 35.5 28 36.5 25.5 32C23 26.5 29.5 22 35.5 24.5C42 27.5 41 37.5 33 40C25.5 42 18.5 36 20 27.5"/>' +
       '<path d="' + petals + '"/></g></svg>';
+  }
+  /** The gold medal of ぜんえき せいは！ for line l: ribbons in the line's colour, a gold disc, a star. */
+  function medalSVG(l) {
+    return '<svg viewBox="0 0 120 150" aria-hidden="true"><defs><radialGradient id="dt-gold" cx=".38" cy=".32" r=".75">' +
+      '<stop offset="0" stop-color="#fff3b0"/><stop offset=".45" stop-color="#f7c53c"/><stop offset="1" stop-color="#c98a10"/></radialGradient></defs>' +
+      path("M34 4H58L50 70H26Z", l.color, ' stroke="#2b3150" stroke-width="2.5" stroke-linejoin="round"') +
+      path("M62 4H86L94 70H70Z", l.color, ' stroke="#2b3150" stroke-width="2.5" stroke-linejoin="round"') +
+      path("M41 4H51L44 60H34Z", "#fff", ' opacity=".35"') +
+      circ(60, 94, 44, "url(#dt-gold)", ' stroke="#2b3150" stroke-width="3"') + circ(60, 94, 35, "none", ' stroke="#c98a10" stroke-width="2.5"') +
+      path("M60 68L67.6 84.6L85.7 86.4L72.1 98.6L76 116.4L60 107.2L44 116.4L47.9 98.6L34.3 86.4L52.4 84.6Z", "#fff6c8", ' stroke="#c98a10" stroke-width="2.4" stroke-linejoin="round"') +
+      '<path d="M40 70Q48 60 60 58" stroke="#fff" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/></svg>';
+  }
+  /** A tiny sketch of line l for the shop: a ring for a loop, a line with dots otherwise. */
+  function sketchSVG(l) {
+    var c = l.color;
+    if (l.type === "loop") return '<svg viewBox="0 0 60 44" aria-hidden="true"><rect x="8" y="6" width="44" height="32" rx="16" fill="none" stroke="' + c + '" stroke-width="5"/>' +
+      [[8, 22], [52, 22], [30, 6], [30, 38], [16, 10], [44, 34]].map(function (q) { return circ(q[0], q[1], 3.2, "#fff", ' stroke="' + c + '" stroke-width="2"'); }).join("") + "</svg>";
+    return '<svg viewBox="0 0 60 44" aria-hidden="true"><path d="M6 32Q18 8 30 22T54 12" fill="none" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/>' +
+      [[6, 32], [18, 17], [30, 22], [42, 22], [54, 12]].map(function (q) { return circ(q[0], q[1], 3.2, "#fff", ' stroke="' + c + '" stroke-width="2"'); }).join("") + "</svg>";
   }
   /** A small plane (for the flight to 北海道 at the start of each lap). */
   function planeSVG() {
@@ -1079,7 +1368,10 @@
   }
   function ruby(k, kana) { return "<ruby>" + k + "<rt>" + kana + "</rt></ruby>"; }
   function reduced() { return !!(g.matchMedia && g.matchMedia("(prefers-reduced-motion: reduce)").matches); }
-  function kanaOf(i) { return STATIONS[i][1]; }
+  /** Station i's kana on line l (default: the japan trip). */
+  function kanaOf(i, l) { return (l || LINES[0]).stations[i][1]; }
+  /** The colour a line shows in (japan: its station's region colour). */
+  function colorOn(l, i) { return l.type === "japan" ? regionOf(i).color : l.color; }
   /** The lead car alone, small, without passengers (chip, bubble, map marker, shop rows). */
   function miniTrain(t, scale) { return trainHTML({ model: t.model, color: t.color, cars: 0, seats: [] }, scale, { seats: false }); }
   /** The train's width in drawing units (to fit it on screen). */
@@ -1133,26 +1425,30 @@
     var s = ctx.s, b = ctx.chip;
     if (!b) return;
     if (s.locked) { b.classList.add("dt-chip-lock"); b.innerHTML = '<span class="dt-chiptxt">' + T.locked + "</span>"; return; }
-    var lbl = s.queue.length ? "🚉 " + s.queue.length : T.left(s.pos.seg - s.pos.step);
-    b.classList.toggle("dt-chip-wait", !!s.queue.length);
+    var q = pending(s).length, p = tripOf(s).pos;
+    var lbl = q ? "🚉 " + q : T.left(p.seg - p.step);
+    b.classList.toggle("dt-chip-wait", !!q);
     b.innerHTML = '<span class="dt-chiptrain">' + miniTrain(s.train, 0.2) + '</span><span class="dt-chiptxt">' + lbl + "</span>";
   }
   /** The bubble over the chip after a card pays: the train slides a notch along current → next station; the day's
    *  first card adds the stamp card and bonus line; an arrival says so. It shrinks into the chip after ~2.5 s. */
   function showBubble(ctx, ev) {
-    var s = ctx.s, a = ev.arrivals, last = a[a.length - 1], from, to, f0, f1;
-    if (last) { to = last.station; from = (to + N - 1) % N; f0 = a.length > 1 ? 0 : ev.from.step / ev.from.seg; f1 = 1; }
-    else { from = ev.from.station; to = (from + 1) % N; f0 = ev.from.step / ev.from.seg; f1 = ev.to.step / ev.to.seg; }
+    var s = ctx.s, a = ev.arrivals, last = a[a.length - 1], l = lineOf(ev.line), from, to, f0, f1;
+    if (last) { to = last.station; from = last.from; f0 = a.length > 1 ? 0 : ev.from.step / ev.from.seg; f1 = 1; }
+    else { from = ev.from.station; to = nextOf(l, ev.from); f0 = ev.from.step / ev.from.seg; f1 = ev.to.step / ev.to.seg; }
     var b = el("div", "dt-bubble" + (last ? " dt-barr" : ""));
+    b.style.setProperty("--lc", colorOn(l, to));
+    if (l.type !== "japan") b.append(htmlEl("div", "dt-bln", "<i></i>" + l.name));
     var line = el("div", "dt-bline"), track = el("span", "dt-btrack"), dot2 = el("i", "dt-bdot dt-bdot2");
     track.append(el("i", "dt-bdot"), el("i", "dt-bfill"), dot2, htmlEl("span", "dt-btrain", miniTrain(s.train, 0.13)));
     track.style.setProperty("--f", f0.toFixed(3));
-    line.append(el("span", "dt-bst", kanaOf(from)), track, el("span", "dt-bst", kanaOf(to)));
+    line.append(el("span", "dt-bst", kanaOf(from, l)), track, el("span", "dt-bst", kanaOf(to, l)));
     b.append(line);
     if (last) {
-      b.append(el("div", "dt-bbig", T.arrived(kanaOf(to))), el("div", "dt-bsmall", T.goStamp + (a.length > 1 ? " " + T.more(a.length - 1) : "")));
+      b.append(el("div", "dt-bbig", T.arrived(kanaOf(to, l))), el("div", "dt-bsmall", T.goStamp + (a.length > 1 ? " " + T.more(a.length - 1) : "")));
+      if (last.turn) b.append(el("div", "dt-bsmall dt-bturn", "🔁 おりかえし！"));
     } else {
-      b.append(htmlEl("div", "dt-bbig", "あと <b>" + (s.pos.seg - s.pos.step) + "</b>"), el("div", "dt-bsmall", T.next(kanaOf(to))));
+      b.append(htmlEl("div", "dt-bbig", "あと <b>" + (ev.to.seg - ev.to.step) + "</b>"), el("div", "dt-bsmall", T.next(kanaOf(to, l))));
     }
     if (ev.first) b.append(el("div", "dt-bday", T.daily(ev.k)));
     if (ev.card && ev.card.full) {
@@ -1217,13 +1513,13 @@
     scene.append(sky, sun, clouds, far, farBase, mid, midBase, near, snow, stn, beam, track, trainBox, pf, ground);
     root.append(scene);
 
-    /** Show a region's scenery (a short fade when it changes). */
-    function setRegion(i) {
-      var r = regionOf(i);
-      if (region === r.id) return;
+    /** Show the scenery for station i of line lineId (default: the active line), with a short fade when it changes. */
+    function setRegion(i, lineId) {
+      var key = sceneKeyOf(lineOf(lineId || activeId(s)), i);
+      if (region === key) return;
       var first = region == null;
-      region = r.id;
-      var sc = sceneOf(r.id);
+      region = key;
+      var sc = sceneOf(key);
       function apply() {
         sky.style.background = "linear-gradient(" + sc.sky[0] + "," + sc.sky[1] + " 75%)";
         sun.style.setProperty("--sun", sc.sun);
@@ -1242,6 +1538,8 @@
       var sc = Math.max(0.72, Math.min(1.25, (w > h && h <= 500 ? h / 420 : h / 620)));
       trainBox.innerHTML = '<div class="dt-train">' + trainHTML(s.train, sc) + "</div>";
       root.classList.toggle("dt-mono", drawn(s.train) === "mono");
+      // on its way back along a there-and-back line the train faces (and the world scrolls) the other way
+      root.classList.toggle("dt-back", lineOf(activeId(s)).type === "line" && tripOf(s).pos.dir < 0);
     }
 
     // -- the UI over the scene: one flex column (top bar, sign, progress, room for the train, the week strip), so
@@ -1255,7 +1553,7 @@
     top.append(stat, el("span", "dt-grow"));
     if (ctx.dev) top.append(btn("dt-tb dt-gear", "⚙", openDev));
     top.append(btn("dt-tb", "📖<small>スタンプ</small>", function () { openBook("stamps"); }),
-      btn("dt-tb", "🏪<small>おみせ</small>", openShop),
+      btn("dt-tb", "🏪<small>おみせ</small>", function () { openShop(); }),
       btn("dt-tb dt-x", "✕<small>とじる</small>", close));
     ui.append(top);
     function renderTop() { coinsEl.innerHTML = "🪙 <b>" + s.coins + "</b>"; }
@@ -1265,21 +1563,26 @@
     var hud = el("div", "dt-hud"), sign = el("div", "dt-sign"), prog = el("div", "dt-prog");
     hud.append(sign, htmlEl("div", "dt-legs", "<i></i><i></i>"), prog);
     ui.append(hud, el("div", "dt-room"));
-    /** The sign for station i (default: the next one); at: the lap of the stop when the train is standing there. */
-    function renderSign(i, at) {
+    /** The sign for station i of line lineId (default: the active line's next station); at: the lap of the stop
+     *  when the train is standing there. Like a real 駅名標 it names both neighbours (none past a terminus). */
+    function renderSign(i, at, lineId) {
       if (busy && i == null) return;
-      var p = s.pos;
-      if (i == null) i = (p.station + 1) % N;
-      var st = STATIONS[i], r = regionOf(i), prev = (i + N - 1) % N, nx = (i + 1) % N;
-      sign.style.setProperty("--rc", r.color);
+      var l = lineOf(lineId || activeId(s)), p = tripOf(s, l.id).pos, n = l.stations.length, loop = l.type !== "line";
+      if (i == null) i = nextOf(l, p);
+      var st = l.stations[i], prev = i > 0 ? i - 1 : loop ? n - 1 : -1, nx = i < n - 1 ? i + 1 : loop ? 0 : -1;
+      var plane = l.type === "japan", yl = st[1].length;
+      sign.style.setProperty("--rc", colorOn(l, i));
+      sign.classList.toggle("dt-signlong", yl > 5);     // a long name gets its own row under the number and lap
       sign.innerHTML = '<span class="dt-sno">' + (i + 1) + '</span><span class="dt-slap">' + T.lap(at ? at : p.lap) + "</span>" +
-        '<div class="dt-sbig' + (st[1].length > 5 ? " dt-long" : "") + '">' + st[1] + "</div>" + '<div class="dt-skan">' + ruby(st[0], st[1]) + "</div>" +
-        '<div class="dt-sband">' + r.name + '</div><div class="dt-snav"><span>← ' + (i === 0 ? "✈️ " : "") + kanaOf(prev) + "</span><span>" +
-        kanaOf(nx) + (nx === 0 ? " ✈️" : "") + " →</span></div>";
+        '<div class="dt-sbig' + (yl > 8 ? " dt-xlong" : yl > 5 ? " dt-long" : "") + '">' + st[1] + "</div>" + '<div class="dt-skan">' + ruby(st[0], st[1]) + "</div>" +
+        '<div class="dt-sband">' + (plane ? regionOf(i).name : l.yomi) + '</div><div class="dt-snav"><span>' +
+        (prev < 0 ? "" : "← " + (plane && i === 0 ? "✈️ " : "") + kanaOf(prev, l)) + "</span><span>" +
+        (nx < 0 ? "" : kanaOf(nx, l) + (plane && nx === 0 ? " ✈️" : "") + " →") + "</span></div>";
       var left = p.seg - p.step;
       prog.classList.toggle("dt-here", !!at);
       if (at) { prog.innerHTML = '<span class="dt-pleft">とうちゃく！</span>'; return; }
       var f = p.step / p.seg;
+      prog.style.setProperty("--lc", l.type === "japan" ? "var(--dt-green)" : l.color);
       prog.innerHTML = '<span class="dt-pleft">あと <b>' + left + '</b></span><span class="dt-ptrack' + (p.seg <= 40 ? " dt-notch" : "") +
         '" style="--n:' + p.seg + '"><i class="dt-pfill" style="transform:scaleX(' + f.toFixed(3) + ')"></i>' +
         '<span class="dt-ptrain" style="left:calc(' + (f * 100).toFixed(1) + '% - 14px)">' + miniTrain(s.train, 0.16) + "</span></span>" +
@@ -1304,55 +1607,67 @@
     // -- arrivals: the platform slides in, the stamp comes down (ポン！), the souvenir pops out
     /** Play every waiting arrival, one at a time. */
     function playArrivals() {
-      if (busy || !s.queue.length) return;
+      var q = pending(s);
+      if (busy || !q.length) return;
       busy = true;
       root.classList.add("dt-busy");
-      var a = s.queue[0];
-      if (a.station === 0) fly(function () { arrive(a); });
+      var a = q[0];
+      if (a.line === "japan" && a.station === 0) fly(function () { arrive(a); });
       else arrive(a);
     }
-    /** ひこうきで ほっかいどうへ！ — a plane crosses the sky (each lap starts at 北海道). */
+    /** ひこうきで ほっかいどうへ！ — a plane crosses the sky (each lap of the japan trip starts at 北海道). */
     function fly(then) {
       var f = el("div", "dt-flyer");
       f.append(htmlEl("div", "dt-plane", planeSVG()), el("div", "dt-flytxt", "ひこうきで ほっかいどうへ！"));
       root.append(f);
       next(function () { f.remove(); then(); }, reduced() ? 1400 : 2600);
     }
-    /** Pull into station a.station, then stamp. */
+    /** Whether arrival a is at the end of a there-and-back line, where the train turns round (not the start). */
+    function turnsAt(a) {
+      var l = lineOf(a.line);
+      return l.type === "line" && (a.station === l.stations.length - 1 || (a.station === 0 && a.lap > 1));
+    }
+    /** Pull into station a.station of line a.line, then stamp. */
     function arrive(a) {
-      setRegion(a.station);
-      var st = STATIONS[a.station], r = regionOf(a.station);
-      stn.style.setProperty("--rc", r.color);
+      setRegion(a.station, a.line);
+      var l = lineOf(a.line), st = l.stations[a.station];
+      stn.style.setProperty("--rc", colorOn(l, a.station));
       stn.innerHTML = '<div class="dt-roof"><span class="dt-board">' + st[1] + " えき</span></div>" +
         '<i class="dt-pillar" style="left:6%"></i><i class="dt-pillar" style="left:36%"></i><i class="dt-pillar" style="left:66%"></i><i class="dt-pillar" style="left:94%"></i>' +
         '<span class="dt-bench"></span>';
-      renderSign(a.station, a.lap);
+      renderSign(a.station, a.lap, a.line);
       scene.classList.remove("dt-leaving", "dt-at");
       scene.classList.add("dt-arriving");
       next(function () { scene.classList.remove("dt-arriving"); scene.classList.add("dt-at", "dt-stopped"); stampTime(a); }, reduced() ? 500 : 1700);
     }
-    /** The stamp paper: hanko down, ポン！, the stamp (pressed and saved here), souvenir, ＋10, then a button. */
+    /** The stamp paper: hanko down, ポン！, the stamp (pressed and saved here), souvenir, ＋10, then a button. At the
+     *  end of a there-and-back line it says おりかえし; a line's first full set of stamps brings the fanfare. */
     function stampTime(a) {
-      var st = STATIONS[a.station], lap = a.lap, tilt = tiltOf(a.station, lap);
+      var l = lineOf(a.line), st = l.stations[a.station], lap = a.lap, tilt = tiltOf(a.station, lap), turn = turnsAt(a);
       var wrapEl = el("div", "dt-arr"), paper = el("div", "dt-sheet"), pad = el("div", "dt-pad");
-      var big = htmlEl("div", "dt-bigst", stampSVG(a.station, lap)), gift = el("div", "dt-gift"), coin = el("div", "dt-coinup", "＋10 🪙");
+      var big = htmlEl("div", "dt-bigst", stampSVG(a.line, a.station, lap)), gift = el("div", "dt-gift"), coin = el("div", "dt-coinup", "＋10 🪙");
+      var fulls = [];       // lines whose every station now has a stamp (their fanfare waits for the button)
       pad.style.setProperty("--tilt", tilt + "deg");
-      pad.style.setProperty("--ink", inkOf(lap));
+      pad.style.setProperty("--ink", inkFor(a.line, lap)[1]);
       pad.append(el("i", "dt-ring"), el("i", "dt-inkspread"), big, htmlEl("div", "dt-hanko", hankoSVG(lap)), el("span", "dt-pon", "ポン！"));
-      gift.innerHTML = '<span class="dt-gemoji">' + st[2] + '</span><span class="dt-gtxt"><small>おみやげ</small><br>' + st[3] + "</span>";
-      var go = btn("dt-go dt-primary", s.queue.length > 1 ? "つぎの スタンプ ▶" : "しゅっぱつ！ 🚃", function () { done(); });
+      gift.innerHTML = st[2] ? '<span class="dt-gemoji">' + st[2] + '</span><span class="dt-gtxt"><small>おみやげ</small><br>' + st[3] + "</span>"
+        : '<span class="dt-gemoji">🚉</span><span class="dt-gtxt"><small>' + l.yomi + "</small><br>えき スタンプ ゲット！</span>";
+      var go = btn("dt-go dt-primary", pending(s).length > 1 ? "つぎの スタンプ ▶" : turn ? "おりかえし！ 🔁" : "しゅっぱつ！ 🚃", function () { cheer(done); });
       var all = btn("dt-go dt-all", "", pressAll);
       go.hidden = true;
       all.hidden = true;
-      paper.append(htmlEl("div", "dt-ah", ruby(st[0], st[1]) + " に とうちゃく！"),
-        el("div", "dt-asub", lap > 1 ? T.lap(lap) + " の スタンプ" : "えき スタンプ"), pad, gift, coin, go, all);
+      paper.style.setProperty("--lc", colorOn(l, a.station));
+      paper.append(l.type === "japan" ? el("span", "dt-none") : htmlEl("div", "dt-aline", "<i></i>" + ruby(l.name, l.yomi)),
+        htmlEl("div", "dt-ah", ruby(st[0], st[1]) + " に とうちゃく！"),
+        el("div", "dt-asub", (lap > 1 ? T.lap(lap) + " の スタンプ" : "えき スタンプ") + (turn ? " ・ 🔁 おりかえし" : "")), pad, gift, coin, go, all);
       wrapEl.append(paper, btn("dt-tb dt-x dt-arrx", "✕<small>とじる</small>", close));
       root.append(wrapEl);
       var pressed = false;
       function press() {
         if (pressed) return;
         pressed = true;
-        if (act(function () { if (!s.queue.length) return false; pressStamp(s); })) run++;
+        var r = null;
+        if (act(function () { r = pressStamp(s); if (!r) return false; })) { run++; if (r.full) fulls.push(r.line); }
         bumpCoins();
         pad.classList.add("dt-pressed");
       }
@@ -1360,24 +1675,32 @@
         press();
         gift.classList.add("dt-on"); coin.classList.add("dt-on"); go.hidden = false; phase = null;
         // a long queue (a big day, or days away): after two in a row, offer to press the rest at once
-        if (run >= 2 && s.queue.length) { all.innerHTML = "ぜんぶ おす（あと " + s.queue.length + "）"; all.hidden = false; }
+        var left = pending(s).length;
+        if (run >= 2 && left) { all.innerHTML = "ぜんぶ おす（あと " + left + "）"; all.hidden = false; }
+      }
+      /** Then: each line just completed gets its fanfare, one after another. */
+      function cheer(then) {
+        if (!fulls.length) return then();
+        fanfare(lineOf(fulls.shift()), function () { cheer(then); });
       }
       /** Press every waiting stamp in one save, then show them all on one sheet. */
       function pressAll() {
         var got = [];
-        if (!act(function () { while (s.queue.length) got.push(pressStamp(s)); })) return;
+        if (!act(function () { for (var r = pressStamp(s); r; r = pressStamp(s)) got.push(r); })) return;
         run += got.length;
+        got.forEach(function (x) { if (x.full) fulls.push(x.line); });
         bumpCoins();
         paper.innerHTML = "";
         var grid = el("div", "dt-allgrid");
         got.forEach(function (x) {
+          var xs = lineOf(x.line).stations[x.station];
           grid.append(htmlEl("div", "dt-allone", '<span class="dt-stw" style="transform:rotate(' + tiltOf(x.station, x.lap) + 'deg)">' +
-            stampSVG(x.station, x.lap) + '</span><span class="dt-allgift">' + STATIONS[x.station][2] + "</span>" +
-            '<span class="dt-allname">' + ruby(STATIONS[x.station][0], STATIONS[x.station][1]) + "</span>"));
+            stampSVG(x.line, x.station, x.lap) + '</span><span class="dt-allgift">' + (xs[2] || "") + "</span>" +
+            '<span class="dt-allname">' + ruby(xs[0], xs[1]) + "</span>"));
         });
         paper.append(el("div", "dt-ah", "スタンプ " + got.length + "こ ポン！"),
           htmlEl("div", "dt-allcoins", "＋10 × " + got.length + " ＝ <b>＋" + got.length * ARRIVAL_COINS + " 🪙</b>"),
-          grid, btn("dt-go dt-primary", "しゅっぱつ！ 🚃", done));
+          grid, btn("dt-go dt-primary", "しゅっぱつ！ 🚃", function () { cheer(done); }));
         paper.classList.add("dt-allsheet");
       }
       wrapEl.addEventListener("click", function () { if (!go.hidden) return; skip(); });
@@ -1397,17 +1720,46 @@
       }, quick ? 100 : 300);
       function done() {
         wrapEl.remove();
+        renderTrain();                       // after a terminus the train faces the way back
         scene.classList.remove("dt-at", "dt-stopped");
         scene.classList.add("dt-leaving");
+        if (turn) banner("🔁 おりかえし！");
         later(function () { scene.classList.remove("dt-leaving"); stn.innerHTML = ""; }, reduced() ? 300 : 1500);
         busy = false;
         root.classList.remove("dt-busy");
-        if (s.queue.length) { busy = true; later(function () { busy = false; playArrivals(); }, reduced() ? 300 : 1200); return; }
-        setRegion((s.pos.station + 1) % N);
+        if (pending(s).length) { busy = true; later(function () { busy = false; playArrivals(); }, reduced() ? 300 : 1200); return; }
+        setRegion(nextOf(lineOf(activeId(s)), tripOf(s).pos));
         renderSign();
         sign.classList.remove("dt-flip");
         later(function () { sign.classList.add("dt-flip"); }, 10);
       }
+    }
+    /** A big word over the scene for a moment (おりかえし！). */
+    function banner(text) {
+      var b = el("div", "dt-banner", text);
+      root.append(b);
+      later(function () { b.remove(); }, 1900);
+    }
+    /** ぜんえき せいは！ — every station of line l has a stamp: a gold medal, confetti and ＋100 (already paid). */
+    function fanfare(l, then) {
+      var f = el("div", "dt-fan"), box = el("div", "dt-fanbox"), conf = el("div", "dt-confetti"), r = rng(l.id.length * 7 + 3);
+      var cols = ["#f4b63f", "#e5484d", "#3aa65a", "#3b8fd6", "#f37cab", "#8c58d0", l.color];
+      for (var i = 0; i < 36; i++) {
+        var c = el("i");
+        c.style.left = (r() * 100).toFixed(1) + "%";
+        c.style.background = cols[i % cols.length];
+        c.style.animationDelay = (r() * 1.2).toFixed(2) + "s";
+        c.style.animationDuration = (2.2 + r() * 1.6).toFixed(2) + "s";
+        c.style.setProperty("--rot", Math.round(r() * 720 - 360) + "deg");
+        conf.append(c);
+      }
+      box.style.setProperty("--lc", l.color);
+      box.innerHTML = '<div class="dt-rays"></div><div class="dt-medal">' + medalSVG(l) + "</div>" +
+        '<div class="dt-fantitle">ぜんえき せいは！</div><div class="dt-fanline">' + ruby(l.name, l.yomi) + " の えき ぜんぶ " + l.stations.length + "えき！</div>" +
+        '<div class="dt-fancoins">＋' + FULL_COINS + " 🪙</div>";
+      box.append(btn("dt-go dt-primary", "やったー！", function () { f.remove(); bumpCoins(); then(); }));
+      f.append(conf, box);
+      root.append(f);
     }
     scene.addEventListener("click", function () { if (busy) skip(); });
 
@@ -1436,51 +1788,85 @@
     }
 
     // -- スタンプちょう: the stamp book and the route map
-    function openBook(tab) {
-      var P = panel("スタンプちょう", "dt-book"), tabs = el("div", "dt-tabs"), area = el("div", "dt-tabarea");
-      var t1 = btn("dt-tab", "📖 スタンプ", function () { show("stamps"); }), t2 = btn("dt-tab", "🗾 ろせんず", function () { show("map"); });
+    /** スタンプちょう: a line picker (owned lines; the others locked, with their price), then that line's stamps or
+     *  its route map. tab: "stamps" | "map"; lineId: the line to show first (default: the active one). */
+    function openBook(tab, lineId) {
+      var P = panel("スタンプちょう", "dt-book"), pick = el("div", "dt-lpick"), tabs = el("div", "dt-tabs"), head = el("div", "dt-lhead");
+      var area = el("div", "dt-tabarea"), which = tab || "stamps", cur = lineId || activeId(s);
+      var t1 = btn("dt-tab", "📖 スタンプ", function () { which = "stamps"; show(); }), t2 = btn("dt-tab", "🗾 ろせんず", function () { which = "map"; show(); });
       tabs.append(t1, t2);
-      P.body.append(tabs, area);
-      function show(which) {
+      P.body.append(pick, head, tabs, area);
+      function show() {
+        pick.innerHTML = "";
+        LINES.forEach(function (l) {
+          var owned = owns(s, "line", l.id), t = s.lines[l.id], c;
+          if (owned) c = btn("dt-lchip" + (l.id === cur ? " dt-on" : ""), "<i></i>" + l.short + (t && t.full ? " 👑" : ""), function () { cur = l.id; show(); });
+          else c = btn("dt-lchip dt-locked", "🔒 " + l.short + " <small>🪙" + l.price + "</small>", function () { P.close(); openShop("line"); });
+          c.style.setProperty("--lc", l.color);
+          pick.append(c);
+        });
+        var l = lineOf(cur), trip = tripOf(s, cur), on = cur === activeId(s);
+        head.innerHTML = "";
+        head.style.setProperty("--lc", l.color);
+        head.append(htmlEl("div", "dt-lname", ruby(l.name, l.yomi) + (trip.full ? ' <span class="dt-gold">👑 ぜんえき せいは！</span>' : "")));
+        if (on) head.append(el("span", "dt-lnow", "🚃 いま のってる"));
+        else head.append(btn("dt-primary dt-lboard", "🚃 この せんに のる", function () { boardLine(cur); P.close(); }));
         t1.classList.toggle("dt-on", which === "stamps");
         t2.classList.toggle("dt-on", which === "map");
         area.innerHTML = "";
-        if (which === "stamps") stampGrid(area); else area.append(htmlEl("div", "dt-route", routeSVG(s)));
+        if (which === "stamps") stampGrid(area, l);
+        else {
+          if (l.type === "line") {
+            var p = trip.pos, end = p.dir > 0 ? l.stations.length - 1 : 0;
+            area.append(htmlEl("div", "dt-dirnote", "<b>" + kanaOf(end, l) + "</b> ほうめんへ はしってるよ" + (on ? "" : "（おやすみ ちゅう）")));
+          }
+          area.append(htmlEl("div", "dt-route", routeSVG(s, cur)));
+        }
       }
-      show(tab || "stamps");
+      show();
     }
-    function stampGrid(area) {
-      var got = Object.keys(s.stamps).length;
-      area.append(htmlEl("div", "dt-count", "あつめた スタンプ <b>" + got + "</b> / " + N +
-        '<span class="dt-cbar"><i style="transform:scaleX(' + (got / N).toFixed(3) + ')"></i></span>'));
-      REGIONS.forEach(function (r) {
-        var sec = el("div", "dt-reg"), grid = el("div", "dt-grid"), n = 0;
-        for (var i = r.from; i <= r.to; i++) if (s.stamps[i]) n++;
-        sec.style.setProperty("--c", r.color);
-        sec.append(htmlEl("div", "dt-regh", "<i></i>" + r.name + " <small>" + n + "/" + (r.to - r.from + 1) + "</small>"), grid);
-        for (var j = r.from; j <= r.to; j++) grid.append(cell(j));
+    /** のりかえ: run the train on line id from now on (its trip goes on from where it was). */
+    function boardLine(id) {
+      if (!act(function () { return board(s, id); }, true)) return;
+      region = null;
+      setRegion(nextOf(lineOf(id), tripOf(s, id).pos), id);
+      renderSign();
+      toast("🚃 " + lineOf(id).short + " に のりかえ！");
+      playArrivals();
+    }
+    function stampGrid(area, l) {
+      var t = tripOf(s, l.id), n = l.stations.length, got = Object.keys(t.stamps).length;
+      area.append(htmlEl("div", "dt-count", "あつめた スタンプ <b>" + got + "</b> / " + n +
+        '<span class="dt-cbar"><i style="transform:scaleX(' + (got / n).toFixed(3) + ')"></i></span>'));
+      var parts = l.type === "japan" ? REGIONS.map(function (r) { return [r.name, r.color, r.from, r.to]; }) : [[l.yomi, l.color, 0, n - 1]];
+      parts.forEach(function (r) {
+        var sec = el("div", "dt-reg"), grid = el("div", "dt-grid"), k = 0;
+        for (var i = r[2]; i <= r[3]; i++) if (t.stamps[i]) k++;
+        sec.style.setProperty("--c", r[1]);
+        sec.append(htmlEl("div", "dt-regh", "<i></i>" + r[0] + " <small>" + k + "/" + (r[3] - r[2] + 1) + "</small>"), grid);
+        for (var j = r[2]; j <= r[3]; j++) grid.append(cell(l, j));
         area.append(sec);
       });
     }
     /** One station in the stamp book: its stamp (tap for the big view), or a dotted circle. */
-    function cell(i) {
-      var st = STATIONS[i], lap = s.stamps[i], c;
+    function cell(l, i) {
+      var st = l.stations[i], lap = tripOf(s, l.id).stamps[i], c;
       if (lap) {
-        c = btn("dt-cell", '<span class="dt-stw" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(i, lap) + "</span>" +
-          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>" + (lap > 1 ? '<span class="dt-lapb" style="background:' + inkOf(lap) + '">' + T.lap(lap) + "</span>" : ""),
-          function () { bigStamp(i); });
+        c = btn("dt-cell", '<span class="dt-stw" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(l.id, i, lap) + "</span>" +
+          '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>" + (lap > 1 ? '<span class="dt-lapb" style="background:' + inkFor(l.id, lap)[1] + '">' + T.lap(lap) + "</span>" : ""),
+          function () { bigStamp(l, i); });
       } else {
-        c = htmlEl("div", "dt-cell dt-none", '<span class="dt-empty"><b>' + st[0] + "</b></span>" +
+        c = htmlEl("div", "dt-cell dt-none", '<span class="dt-empty"><b>' + (st[2] ? st[0] : st[0].slice(0, 3)) + "</b></span>" +
           '<span class="dt-cname">' + st[0] + '</span><span class="dt-ckana">' + st[1] + "</span>");
       }
       return c;
     }
-    function bigStamp(i) {
-      var st = STATIONS[i], lap = s.stamps[i], M = modal("dt-bigview");
-      M.box.innerHTML = '<div class="dt-bigstamp" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(i, lap) + "</div>" +
+    function bigStamp(l, i) {
+      var st = l.stations[i], lap = tripOf(s, l.id).stamps[i], M = modal("dt-bigview");
+      M.box.innerHTML = '<div class="dt-bigstamp" style="transform:rotate(' + tiltOf(i, lap) + 'deg)">' + stampSVG(l.id, i, lap) + "</div>" +
         '<div class="dt-bvname">' + ruby(st[0], st[1]) + "</div>" +
-        '<div class="dt-bvgift"><span>' + st[2] + "</span>おみやげ: " + st[3] + "</div>" +
-        '<div class="dt-bvlap" style="background:' + inkOf(lap) + '">' + T.lap(lap) + " の スタンプ</div>";
+        (st[2] ? '<div class="dt-bvgift"><span>' + st[2] + "</span>おみやげ: " + st[3] + "</div>" : '<div class="dt-bvgift">' + l.short + " の えき</div>") +
+        '<div class="dt-bvlap" style="background:' + inkFor(l.id, lap)[1] + '">' + T.lap(lap) + " の スタンプ</div>";
       M.box.append(btn("dt-primary dt-wide", "とじる", M.close));
     }
 
@@ -1511,12 +1897,13 @@
     }
 
     // -- おみせ: the shop
-    function openShop() {
+    /** おみせ: lines first (ろせん), then the train's model, paint, cars and passengers. tab: the tab to open on. */
+    function openShop(tab) {
       var P = panel("おみせ", "dt-shop"), coinTag = el("span", "dt-pcoins"), show = el("div", "dt-show");
-      var tabs = el("div", "dt-tabs"), area = el("div", "dt-tabarea"), cur = "model";
+      var tabs = el("div", "dt-tabs"), area = el("div", "dt-tabarea"), cur = tab || "line";
       P.head.append(coinTag);
       P.body.append(show, tabs, area);
-      var names = [["model", "🚃<br>でんしゃ"], ["color", "🎨<br>いろ"], ["cars", "🔗<br>しゃりょう"], ["pass", "🐶<br>じょうきゃく"]];
+      var names = [["line", "🛤️<br>ろせん"], ["model", "🚃<br>でんしゃ"], ["color", "🎨<br>いろ"], ["cars", "🔗<br>しゃりょう"], ["pass", "🐶<br>じょうきゃく"]];
       var tabBtns = names.map(function (n) { var b = btn("dt-tab", n[1], function () { cur = n[0]; draw(); }); tabs.append(b); return b; });
       var pick = null;    // the passenger chosen to seat next
       /** Redraw the showroom train, coins and the current tab. */
@@ -1526,7 +1913,7 @@
         show.innerHTML = '<div class="dt-showtrain"><div class="dt-train">' + trainHTML(s.train, Math.max(0.42, Math.min(0.95, w / u))) + "</div></div>";
         tabBtns.forEach(function (b, i) { b.classList.toggle("dt-on", names[i][0] === cur); });
         area.innerHTML = "";
-        ({ model: models, color: colors, cars: cars, pass: passengers })[cur]();
+        ({ line: lines, model: models, color: colors, cars: cars, pass: passengers })[cur]();
       }
       /** An item row/tile: art, name, and its button (equipped, use, buy, or how many coins are missing). */
       function item(art, name, state, onTap, tile) {
@@ -1551,10 +1938,41 @@
         var row = el("div", "dt-row");
         row.append(btn("", "やめる", M.close), btn("dt-primary", "かう！", function () {
           M.close();
-          if (act(function () { return buy(s, kind, id); }, true)) toast("やったね！ " + name);
+          if (act(function () { return buy(s, kind, id); }, true)) {
+            if (kind === "line") askRide(id); else toast("やったね！ " + name);
+          }
           draw();
         }));
         M.box.append(row);
+      }
+      /** After buying a line: 「いま のる？」 */
+      function askRide(id) {
+        var l = lineOf(id), M = modal("dt-ask");
+        M.box.style.setProperty("--lc", l.color);
+        M.box.innerHTML = '<div class="dt-ridebig">' + sketchSVG(l) + '</div><div class="dt-askq">' + ruby(l.name, l.yomi) + " を かったよ！</div>" +
+          '<div class="dt-asks">いま のる？</div>';
+        var row = el("div", "dt-row");
+        row.append(btn("", "あとで", M.close), btn("dt-primary", "のる！ 🚃", function () { M.close(); P.close(); boardLine(id); }));
+        M.box.append(row);
+      }
+      /** ろせん: every line, with its colour, name, stations, a sketch; のる / のっている once owned. */
+      function lines() {
+        var list = el("div", "dt-items");
+        LINES.forEach(function (l) {
+          var on = activeId(s) === l.id, owned = owns(s, "line", l.id), t = s.lines[l.id];
+          var st = on ? { on: true, owned: true, label: "✔ のっている" } : owned ? { owned: true, label: "のる" } : stateOf("line", l.id, false);
+          var info = l.stations.length + "えき ・ " + (l.type === "line" ? "いったり きたり" : "ぐるっと 1しゅう") +
+            (FITS[l.id] ? ' <span class="dt-fits">にあう: ' + miniTrain({ model: FITS[l.id], color: "" }, 0.15) + "</span>" : "");
+          var it = item(sketchSVG(l), '<span class="dt-lnm">' + ruby(l.name, l.yomi) + (t && t.full ? " 👑" : "") + '</span><span class="dt-linfo">' + info + "</span>",
+            st, function () {
+              if (owned) { boardLine(l.id); draw(); }
+              else askBuy("line", l.id, l.name);
+            });
+          it.classList.add("dt-lcard");
+          it.style.setProperty("--lc", l.color);
+          list.append(it);
+        });
+        area.append(list);
       }
       function models() {
         var list = el("div", "dt-items");
@@ -1692,27 +2110,51 @@
     doc.body.append(root);
     syncIn(ctx);
     vis();
-    setRegion(s.queue.length ? s.queue[0].station : (s.pos.station + 1) % N);
+    var q0 = pending(s)[0];
+    if (q0) setRegion(q0.station, q0.line); else setRegion(nextOf(lineOf(activeId(s)), tripOf(s).pos));
     renderTrain();
     renderTop();
     renderSign();
     renderWeek();
     if (reduced()) root.classList.add("dt-still");
-    later(playArrivals, s.queue.length ? 500 : 0);
+    later(playArrivals, q0 ? 500 : 0);
     ctx.close = close;
     ctx.ui = { openBook: openBook, openCard: openCard, openShop: openShop, openDev: openDev, playArrivals: playArrivals, skip: skip };
   }
 
   // ---- the route map ----------------------------------------------------------------------------
-  /** ろせんず: all 47 stations on a snaking subway-style line, 4 a row, region colours; stations with a stamp
-   *  are filled, and a little train marks where the train is now (a plane, between 沖縄 and 北海道). Labels are the
-   *  kanji with the kana under it, the kana at 12.5 units (about 11.5 px on a 360 px phone). */
-  function routeSVG(s) {
-    var W = 360, per = 4, x0 = 52, dx = (W - 2 * x0) / (per - 1), y0 = 66, dy = 86, rows = Math.ceil(N / per);
-    function pt(i) {
-      var r = Math.floor(i / per), c = i % per;
-      return [r % 2 ? W - x0 - c * dx : x0 + c * dx, y0 + r * dy];
-    }
+  /** ろせんず for line lineId: the japan trip and there-and-back lines snake down the screen (japan in region
+   *  colours, 4 a row; other lines in their colour, 3 a row so long names fit); a loop line is a ring. Stations with
+   *  a stamp are filled; a little train marks where the train is on that line (a plane between 沖縄 and 北海道). */
+  function routeSVG(s, lineId) {
+    var l = lineOf(lineId || activeId(s)), trip = tripOf(s, l.id);
+    return l.type === "loop" ? ringSVG(s, l, trip) : snakeSVG(s, l, trip);
+  }
+  /** Map labels for station st at (x, y): kanji, then kana (split in two lines when long), at least 11.5 units. */
+  function label(st, x, y, got, room, anchor) {
+    var k = st[0], y1 = st[1], kfs = Math.min(15, room / k.length), lines = [y1];
+    if (y1.length * 11.5 > room) { var h = Math.ceil(y1.length / 2); lines = [y1.slice(0, h), y1.slice(h)]; }
+    var yfs = Math.max(11.5, Math.min(12.5, room / Math.max.apply(null, lines.map(function (t) { return t.length; }))));
+    var a = ' text-anchor="' + (anchor || "middle") + '"';
+    return '<text x="' + x + '" y="' + y + '" font-size="' + kfs.toFixed(1) + '"' + a + ' font-weight="700" fill="' + (got ? "#2b3150" : "#a59d8e") + '">' + k + "</text>" +
+      lines.map(function (t, i) {
+        return '<text x="' + x + '" y="' + (y + 15 + i * 13) + '" font-size="' + yfs.toFixed(1) + '"' + a + ' fill="' + (got ? "#4a5068" : "#ada595") + '">' + t + "</text>";
+      }).join("");
+  }
+  /** The train on a map at (x, y): a white disc with the lead car, pinging a few times. */
+  function marker(s, x, y) {
+    return '<g transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')"><circle class="dt-ping" r="15" fill="#2b3150" opacity=".18"/>' +
+      '<circle r="13" fill="#fff" stroke="#2b3150" stroke-width="2.5"/>' +
+      '<g transform="translate(-10.5 -6.5) scale(.12)">' + CARS[drawn(s.train)].lead(Object.assign({ seats: [] }, paintOf(s.train))).svg + "</g></g>";
+  }
+  function stationDot(x, y, c, got) {
+    return got ? circ(x, y, 10, c, ' stroke="#fff" stroke-width="3.5"') + '<path d="M' + (x - 4) + " " + y + "l3 3l5 -6" + '" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
+      : circ(x, y, 8.5, "#fff", ' stroke="' + c + '" stroke-width="3.5" opacity=".75"');
+  }
+  function snakeSVG(s, l, trip) {
+    var n = l.stations.length, japan = l.type === "japan", per = japan ? 4 : 3, W = 360, x0 = japan ? 52 : 56;
+    var dx = (W - 2 * x0) / (per - 1), y0 = japan ? 66 : 40, dy = japan ? 86 : 100, rows = Math.ceil(n / per), st = trip.stamps, p = trip.pos;
+    function pt(i) { var r = Math.floor(i / per), c = i % per; return [r % 2 ? W - x0 - c * dx : x0 + c * dx, y0 + r * dy]; }
     /** The point a fraction f along the line from station i to i+1 (a U-turn between rows). */
     function along(i, f) {
       var a = pt(i), b = pt(i + 1);
@@ -1721,36 +2163,60 @@
       return [a[0] + (right ? 1 : -1) * rr * Math.sin(ang), cy - rr * Math.cos(ang)];
     }
     var lines = "", dots = "", labels = "";
-    for (var i = 0; i < N - 1; i++) {
-      var a = pt(i), b = pt(i + 1), col = regionOf(i + 1).color, seen = s.stamps[i] && s.stamps[i + 1];
+    for (var i = 0; i < n - 1; i++) {
+      var a = pt(i), b = pt(i + 1), seen = st[i] && st[i + 1];
       var d = a[1] === b[1] ? "M" + a[0] + " " + a[1] + "H" + b[0] : "M" + a[0] + " " + a[1] + "A" + dy / 2 + " " + dy / 2 + " 0 0 " + (a[0] > W / 2 ? 1 : 0) + " " + b[0] + " " + b[1];
-      lines += '<path d="' + d + '" stroke="' + col + '" stroke-width="9" fill="none" stroke-linecap="round" opacity="' + (seen ? 1 : 0.32) + '"/>';
+      lines += '<path d="' + d + '" stroke="' + colorOn(l, i + 1) + '" stroke-width="9" fill="none" stroke-linecap="round" opacity="' + (seen ? 1 : 0.32) + '"/>';
     }
-    for (var j = 0; j < N; j++) {
-      var p = pt(j), rc = regionOf(j).color, got = s.stamps[j], st = STATIONS[j];
-      dots += got ? circ(p[0], p[1], 10, rc, ' stroke="#fff" stroke-width="3.5"') + '<path d="M' + (p[0] - 4) + " " + p[1] + "l3 3l5 -6" + '" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
-        : circ(p[0], p[1], 8.5, "#fff", ' stroke="' + rc + '" stroke-width="3.5" opacity=".75"');
-      labels += '<text x="' + p[0] + '" y="' + (p[1] + 29) + '" font-size="15" text-anchor="middle" font-weight="700" fill="' + (got ? "#2b3150" : "#a59d8e") + '">' + st[0] + "</text>" +
-        '<text x="' + p[0] + '" y="' + (p[1] + 44) + '" font-size="12.5" text-anchor="middle" fill="' + (got ? "#4a5068" : "#ada595") + '">' + st[1] + "</text>";
+    for (var j = 0; j < n; j++) {
+      var q = pt(j);
+      dots += stationDot(q[0], q[1], colorOn(l, j), st[j]);
+      labels += label(l.stations[j], q[0], q[1] + 29, st[j], dx - 6);
     }
-    var end = pt(N - 1), planeAt = [end[0], end[1] + 66], marker;
-    var fly = '<path d="M' + end[0] + " " + (end[1] + 50) + "V" + (planeAt[1] - 14) + '" stroke="#8a8fa3" stroke-width="2.5" stroke-dasharray="3 5" fill="none"/>';
-    if (s.pos.station === N - 1) {      // on the way from 沖縄 back to 北海道: in the plane
-      marker = '<g transform="translate(' + planeAt[0] + " " + planeAt[1] + ')"><circle class="dt-ping" r="17" fill="#2b3150" opacity=".18"/>' +
-        '<circle r="15" fill="#fff" stroke="#2b3150" stroke-width="2.5"/><text y="6" font-size="17" text-anchor="middle">✈️</text></g>';
-    } else {
-      var here = along(s.pos.station, s.pos.step / s.pos.seg);
-      marker = '<g transform="translate(' + here[0].toFixed(1) + " " + here[1].toFixed(1) + ')"><circle class="dt-ping" r="15" fill="#2b3150" opacity=".18"/>' +
-        '<circle r="13" fill="#fff" stroke="#2b3150" stroke-width="2.5"/>' +
-        '<g transform="translate(-10.5 -6.5) scale(.12)">' + CARS[drawn(s.train)].lead(Object.assign({ seats: [] }, paintOf(s.train))).svg + "</g></g>";
+    var mk, extra = "", legend = "", h = y0 + (rows - 1) * dy + (japan ? 112 : 64);
+    if (japan) {
+      var end = pt(n - 1), planeAt = [end[0], end[1] + 66];
+      extra = '<path d="M' + end[0] + " " + (end[1] + 50) + "V" + (planeAt[1] - 14) + '" stroke="#8a8fa3" stroke-width="2.5" stroke-dasharray="3 5" fill="none"/>' +
+        '<text x="' + (planeAt[0] + (planeAt[0] < W / 2 ? 24 : -24)) + '" y="' + (planeAt[1] + 5) + '" font-size="12.5" text-anchor="' +
+        (planeAt[0] < W / 2 ? "start" : "end") + '" fill="#2b3150">ひこうきで ほっかいどうへ</text>';
+      legend = REGIONS.map(function (r, k) {
+        var x = 12 + (k % 4) * 87, y = 16 + Math.floor(k / 4) * 20;
+        return rect(x, y - 8, 14, 9, 4.5, r.color) + '<text x="' + (x + 18) + '" y="' + y + '" font-size="11.5" fill="#2b3150">' + (r.id === "kyushu" ? "きゅうしゅう" : r.name) + "</text>";
+      }).join("");
+      mk = p.station === n - 1 ? '<g transform="translate(' + planeAt[0] + " " + planeAt[1] + ')"><circle class="dt-ping" r="17" fill="#2b3150" opacity=".18"/>' +
+        '<circle r="15" fill="#fff" stroke="#2b3150" stroke-width="2.5"/><text y="6" font-size="17" text-anchor="middle">✈️</text></g>' : null;
     }
-    var legend = REGIONS.map(function (r, k) {
-      var x = 12 + (k % 4) * 87, y = 16 + Math.floor(k / 4) * 20;
-      return rect(x, y - 8, 14, 9, 4.5, r.color) + '<text x="' + (x + 18) + '" y="' + y + '" font-size="11.5" fill="#2b3150">' + (r.id === "kyushu" ? "きゅうしゅう" : r.name) + "</text>";
-    }).join("");
-    return '<svg viewBox="0 0 ' + W + " " + (y0 + (rows - 1) * dy + 112) + '" aria-hidden="true">' + legend + lines + fly + dots + labels +
-      '<text x="' + (planeAt[0] + (planeAt[0] < W / 2 ? 24 : -24)) + '" y="' + (planeAt[1] + 5) + '" font-size="12.5" text-anchor="' +
-      (planeAt[0] < W / 2 ? "start" : "end") + '" fill="#2b3150">ひこうきで ほっかいどうへ</text>' + marker + "</svg>";
+    if (!mk) {
+      var f = p.step / p.seg, here = l.type === "line" && p.dir < 0 ? along(p.station - 1, 1 - f) : along(p.station, f);
+      mk = marker(s, here[0], here[1]);
+    }
+    return '<svg viewBox="0 0 ' + W + " " + h + '" aria-hidden="true">' + legend + lines + extra + dots + labels + mk + "</svg>";
+  }
+  /** A loop line as a ring (a long oval): up the right side, down the left, round at the ends. */
+  function ringSVG(s, l, trip) {
+    var n = l.stations.length, half = Math.ceil(n / 2), W = 360, xl = 148, xr = 212, r = (xr - xl) / 2, y0 = 74, gap = 44;
+    var yb = y0 + (half - 1) * gap, st = trip.stamps, p = trip.pos;
+    function pt(i) { return i < half ? [xr, yb - i * gap] : [xl, y0 + (i - half) * gap]; }
+    function along(i, f) {
+      var a = pt(i), b = pt((i + 1) % n);
+      if (a[0] === b[0]) return [a[0], a[1] + (b[1] - a[1]) * f];
+      var top = a[0] > b[0], ang = Math.PI * f, cy = a[1];
+      return top ? [W / 2 + r * Math.cos(ang), cy - r * Math.sin(ang)] : [W / 2 - r * Math.cos(ang), cy + r * Math.sin(ang)];
+    }
+    var ring = '<path d="M' + xr + " " + yb + "V" + y0 + "A" + r + " " + r + " 0 0 0 " + xl + " " + y0 + "V" + yb + "A" + r + " " + r + " 0 0 0 " + xr + " " + yb +
+      '" stroke="' + l.color + '" stroke-width="10" fill="none"/>', dots = "", labels = "", arrows = "";
+    for (var j = 0; j < n; j++) {
+      var q = pt(j), right = j < half;
+      dots += stationDot(q[0], q[1], l.color, st[j]);
+      labels += label(l.stations[j], q[0] + (right ? 18 : -18), q[1] - 1, st[j], 126, right ? "start" : "end");
+    }
+    for (var k = 0; k < half - 1; k += 3) {
+      var yr = yb - k * gap - gap / 2, yl = y0 + k * gap + gap / 2;
+      arrows += '<path d="M' + (xr - 5) + " " + (yr + 3) + "l5 -6l5 6" + '" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+        '<path d="M' + (xl - 5) + " " + (yl - 3) + "l5 6l5 -6" + '" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    }
+    var here = along(p.station, p.step / p.seg);
+    return '<svg viewBox="0 0 ' + W + " " + (yb + r + 30) + '" aria-hidden="true">' + ring + arrows + dots + labels + marker(s, here[0], here[1]) + "</svg>";
   }
 
   // ---- style ------------------------------------------------------------------------------------
@@ -1797,10 +2263,13 @@
     "@keyframes dt-rise{from{opacity:0;transform:translateY(18px) scale(.8)}to{opacity:1;transform:none}}",
     "@keyframes dt-shrink{from{opacity:1;transform:none}to{opacity:0;transform:scale(.12)}}",
     ".dt-bline{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#5a6078}",
+    ".dt-bst{max-width:30vw;word-break:break-all;line-height:1.15}.dt-bturn{color:var(--lc,#e0523f);font-weight:700}",
+    ".dt-bln{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#5a6078;margin-bottom:2px}",
+    ".dt-bln i{width:18px;height:6px;border-radius:3px;background:var(--lc)}",
     ".dt-btrack{position:relative;display:block;width:112px;height:22px;flex:none}",
     ".dt-btrack::before{content:'';position:absolute;left:0;right:0;top:16px;height:4px;border-radius:2px;background:#e6dfcf}",
     ".dt-bdot{position:absolute;left:-4px;top:13px;width:10px;height:10px;border-radius:50%;background:#fff;border:2.5px solid var(--dt-ink)}",
-    ".dt-bfill{position:absolute;left:0;right:0;top:16px;height:4px;border-radius:2px;background:var(--dt-green);transform:scaleX(var(--f,0));",
+    ".dt-bfill{position:absolute;left:0;right:0;top:16px;height:4px;border-radius:2px;background:var(--lc,var(--dt-green));transform:scaleX(var(--f,0));",
     "transform-origin:left center;transition:transform 1s cubic-bezier(.3,.1,.2,1)}",
     ".dt-bdot2{left:auto;right:-4px}.dt-bping{animation:dt-ping .8s 2 ease-out;background:var(--dt-gold)}",
     "@keyframes dt-ping{50%{transform:scale(1.6)}}",
@@ -1894,7 +2363,8 @@
     ".dt-sno{position:absolute;left:8px;top:8px;min-width:30px;height:30px;padding:0 4px;border-radius:7px;border:3px solid var(--rc);",
     "font-size:14px;font-weight:700;line-height:24px;text-align:center;background:#fff}",
     ".dt-sbig{font-size:34px;font-weight:700;letter-spacing:.14em;line-height:1.15;padding-left:.14em;margin-top:2px}",
-    ".dt-long{font-size:27px;letter-spacing:.08em;margin-top:8px}",
+    ".dt-sign.dt-signlong{padding-top:34px}.dt-signlong .dt-sbig{margin-top:0}",
+    ".dt-long{font-size:27px;letter-spacing:.08em;margin-top:8px}.dt-sbig.dt-xlong{font-size:20px;letter-spacing:.02em;margin:10px 30px 2px;line-height:1.25}",
     ".dt-skan{font-size:17px;font-weight:700;line-height:1.1;margin-top:-1px}.dt-skan rt{font-size:9px;font-weight:400}",
     ".dt-sband{height:17px;margin:5px -10px 3px;background:var(--rc);color:#fff;font-size:11px;font-weight:700;line-height:17px;letter-spacing:.1em}",
     ".dt-snav{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#4a5068}",
@@ -1905,11 +2375,11 @@
     ".dt-here{justify-content:center}.dt-here .dt-pleft{color:var(--dt-red);font-size:18px}",
     ".dt-ptrack{position:relative;flex:1;height:22px;min-width:0}",
     ".dt-ptrack::before{content:'';position:absolute;left:0;right:0;top:13px;height:6px;border-radius:3px;background:#e9e2d2}",
-    ".dt-pfill{position:absolute;left:0;right:0;top:13px;height:6px;border-radius:3px;background:var(--dt-green);transform-origin:left center}",
+    ".dt-pfill{position:absolute;left:0;right:0;top:13px;height:6px;border-radius:3px;background:var(--lc,var(--dt-green));transform-origin:left center}",
     ".dt-notch::after{content:'';position:absolute;left:0;right:0;top:13px;height:6px;",
     "background:repeating-linear-gradient(90deg,transparent 0 calc(100% / var(--n) - 2px),rgba(255,255,255,.9) calc(100% / var(--n) - 2px) calc(100% / var(--n)))}",
     ".dt-ptrain{position:absolute;bottom:7px}.dt-ptrain svg{display:block}",
-    ".dt-pnext{flex:none;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--dt-paper2)}",
+    ".dt-pnext{flex:0 1 auto;max-width:42%;word-break:break-all;text-align:center;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--dt-paper2)}",
     // the week strip
     ".dt-week{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:100%;padding:5px 12px 6px;margin:0;border-radius:18px;",
     "background:rgba(255,255,255,.92);border:2px solid rgba(43,49,80,.5);box-shadow:0 2px 0 rgba(43,49,80,.3);font-size:12px;cursor:pointer}",
@@ -2055,7 +2525,57 @@
     ".dt-toast{position:absolute;left:50%;top:40%;z-index:50;transform:translateX(-50%);padding:10px 20px;border-radius:20px;background:#fff;",
     "border:2.5px solid var(--dt-ink);box-shadow:0 3px 0 var(--dt-ink);font-size:18px;font-weight:700;white-space:nowrap;animation:dt-pop .35s cubic-bezier(.2,1.6,.4,1);pointer-events:none}",
     ".dt-devgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dt-devgrid .dt-btn{font-size:13px;padding:6px}",
-    // sideways phones
+    // lines: the picker, headers, shop cards
+    ".dt-lpick{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}",
+    ".dt-lchip{display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:13px;border-radius:22px;background:#fff;box-shadow:0 2px 0 var(--dt-ink)}",
+    ".dt-lchip i{width:14px;height:14px;border-radius:50%;background:var(--lc);flex:none}.dt-lchip small{font-weight:400;font-size:11px}",
+    ".dt-lchip.dt-on{background:var(--lc);color:#fff!important;transform:translateY(2px);box-shadow:none}.dt-lchip.dt-on i{background:#fff}",
+    ".dt-locked{background:#efe8da;color:#8a8270!important;border-style:dashed;box-shadow:none}",
+    ".dt-lhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;margin:0 0 10px;padding:8px 12px;",
+    "border-radius:16px;background:#fff;border:2.5px solid var(--lc);border-left-width:12px}",
+    ".dt-lname{font-size:19px;font-weight:700}.dt-lname rt{font-size:10px;font-weight:400}",
+    ".dt-gold{display:inline-block;font-size:12px;padding:1px 10px;border-radius:10px;background:linear-gradient(#ffe48a,#f2b51e);color:#5a3d00;",
+    "border:1.5px solid #c98a10;vertical-align:middle}",
+    ".dt-lnow{font-size:13px;font-weight:700;color:#4a5068}.dt-lboard{font-size:14px;padding:4px 12px}",
+    ".dt-dirnote{text-align:center;font-size:14px;margin:0 0 8px}.dt-dirnote b{font-size:16px}",
+    ".dt-aline{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#4a5068}",
+    ".dt-aline i{width:22px;height:8px;border-radius:4px;background:var(--lc)}.dt-aline rt{font-size:9px;font-weight:400}",
+    ".dt-lcard{position:relative;overflow:hidden;padding-left:20px}",
+    ".dt-lcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--lc)}",
+    ".dt-lcard .dt-iart{min-width:64px;width:64px}.dt-lcard .dt-iart svg{width:60px;height:44px}",
+    ".dt-lnm{display:block;font-size:16px}.dt-lnm rt{font-size:10px;font-weight:400}",
+    ".dt-linfo{display:block;font-size:12px;font-weight:400;color:#5a6078;margin-top:2px}.dt-fits{display:inline-flex;align-items:flex-end;gap:3px;font-size:11px;color:#8a8270;white-space:nowrap}",
+    ".dt-ridebig svg{width:120px;height:88px}.dt-asks{font-size:17px;margin-bottom:12px}.dt-ask rt{font-size:10px}",
+    // おりかえし and the way back: the train faces left, the world scrolls the other way, stations slide in from the left
+    ".dt-banner{position:absolute;left:0;right:0;top:44%;z-index:25;margin:0 auto;width:max-content;max-width:90%;padding:10px 24px;border-radius:26px;",
+    "background:#fff;border:3px solid var(--dt-ink);box-shadow:0 4px 0 var(--dt-ink);font-size:26px;font-weight:700;color:var(--dt-red);",
+    "pointer-events:none;animation:dt-bannerin 1.9s cubic-bezier(.2,1.5,.4,1) forwards}",
+    "@keyframes dt-bannerin{0%{opacity:0;transform:scale(.4) rotate(-8deg)}20%{opacity:1;transform:scale(1.1) rotate(3deg)}30%{transform:none}85%{opacity:1}100%{opacity:0}}",
+    ".dt-back .dt-train{transform:scaleX(-1)}.dt-back .dt-trainbox{right:auto;left:4%}.dt-back .dt-trtxt{display:none}",
+    ".dt-back .dt-layer{animation-direction:reverse}",
+    ".dt-back .dt-stn,.dt-back .dt-pf{transform:translateX(-110%)}",
+    ".dt-back .dt-arriving .dt-stn,.dt-back .dt-arriving .dt-pf{animation-name:dt-slidein-l}",
+    ".dt-back .dt-leaving .dt-stn,.dt-back .dt-leaving .dt-pf{animation-name:dt-slideout-r}",
+    ".dt-back .dt-at .dt-stn,.dt-back .dt-at .dt-pf{transform:none}",
+    "@keyframes dt-slidein-l{from{transform:translateX(-110%)}to{transform:none}}@keyframes dt-slideout-r{from{transform:none}to{transform:translateX(115%)}}",
+    // ぜんえき せいは！
+    ".dt-fan{position:absolute;left:0;top:0;right:0;bottom:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:16px;",
+    "background:radial-gradient(circle at 50% 45%,rgba(255,226,140,.55),rgba(30,34,56,.6) 70%);animation:dt-fade .3s;overflow:hidden}",
+    ".dt-confetti{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none}",
+    ".dt-confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;opacity:0;animation:dt-conf 3s ease-in 2 both}",
+    "@keyframes dt-conf{0%{opacity:1;transform:translate3d(0,0,0) rotate(0)}100%{opacity:.9;transform:translate3d(30px,110vh,0) rotate(var(--rot))}}",
+    ".dt-fanbox{position:relative;width:min(100%,330px);padding:18px 16px 16px;text-align:center;border-radius:24px;background:#fffaf0;",
+    "border:3px solid #c98a10;box-shadow:0 6px 0 #a06c08,0 0 0 6px #ffe48a;animation:dt-pop .6s cubic-bezier(.2,1.5,.4,1)}",
+    ".dt-rays{position:absolute;left:50%;top:86px;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;opacity:.55;pointer-events:none;",
+    "background:repeating-conic-gradient(rgba(255,214,90,.75) 0 10deg,rgba(255,214,90,0) 10deg 20deg);",
+    "-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%);animation:dt-spin 9s linear 1}",
+    ".dt-medal{position:relative;width:118px;margin:0 auto;animation:dt-swing 1.4s ease-in-out .5s 2}.dt-medal svg{display:block;width:100%}",
+    "@keyframes dt-swing{0%,100%{transform:rotate(0)}30%{transform:rotate(-7deg)}70%{transform:rotate(6deg)}}",
+    ".dt-fantitle{position:relative;margin:6px 0 2px;font-size:30px;font-weight:700;color:#b06d00;letter-spacing:.06em;",
+    "text-shadow:0 2px 0 #fff,0 3px 0 #f2c94c}",
+    ".dt-fanline{position:relative;font-size:15px}.dt-fanline rt{font-size:10px}",
+    ".dt-fancoins{position:relative;margin:6px 0 10px;font-size:24px;font-weight:700;color:#b07a06}",
+        // sideways phones
     "@media " + SIDEWAYS + "{.dt-root{--g:46px;--up1:48px;--up2:18px}",
     ".dt-ui{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);grid-template-rows:auto auto 1fr;align-items:start}",
     ".dt-top{grid-column:1/3}.dt-hud{grid-column:1;grid-row:2;width:auto}.dt-room{display:none}",
@@ -2069,7 +2589,7 @@
     "@media (prefers-reduced-motion:reduce){.dt-layer,.dt-snow,.dt-root .dt-wh,.dt-root .dt-rod,.dt-trainbox,.dt-root .dt-puff,.dt-ping,.dt-bping{animation:none!important}",
     ".dt-bubble{animation:dt-fade .3s both}.dt-bout{animation:dt-fadeout .4s forwards}.dt-btrain{transition:none}",
     ".dt-arriving .dt-stn,.dt-arriving .dt-pf{animation:dt-fade .4s forwards;transform:none}.dt-leaving .dt-stn,.dt-leaving .dt-pf{animation:dt-fadeout .3s forwards;transform:none}",
-    ".dt-hanko,.dt-inkspread,.dt-plane{display:none}.dt-pressed .dt-bigst{animation:dt-fadein .3s forwards;transform:rotate(var(--tilt))}",
+    ".dt-hanko,.dt-inkspread,.dt-plane,.dt-confetti,.dt-rays{display:none}.dt-medal,.dt-banner{animation:dt-fadein .3s forwards}.dt-pressed .dt-bigst{animation:dt-fadein .3s forwards;transform:rotate(var(--tilt))}",
     ".dt-pressed .dt-pon,.dt-gift.dt-on,.dt-coinup.dt-on,.dt-flytxt,.dt-sheet,.dt-panel,.dt-mbox,.dt-toast,.dt-bigstamp,.dt-flip,.dt-bump{animation:dt-fadein .3s forwards}",
     ".dt-pressed .dt-pon{transform:rotate(12deg)}}",
     "@keyframes dt-fadein{from{opacity:0}to{opacity:1}}@keyframes dt-fadeout{to{opacity:0}}"
@@ -2083,6 +2603,7 @@
       dayOf: dayOf, segLength: segLength, studyK: studyK, bonusFor: bonusFor, advance: advance, payCard: payCard,
       pressStamp: pressStamp, stampBox: stampBox, buy: buy, equip: equip, seat: seat, windowsOf: windowsOf, owns: owns,
       priceOf: priceOf, devPastDay: devPastDay, devArrive: devArrive, mount: mount, regionOf: regionOf,
+      LINES: LINES, board: board, activeId: activeId, pending: pending, lineOf: lineOf, migrate: migrate,
       setShift: function (n) { shift = n; } };
   }
   // On a card: mount into #densha in AnkiDroid's study screen only (it defines ankidroid.userAction; the
