@@ -18,6 +18,9 @@
  */
 (function () {
   "use strict";
+  /** The release this script is from ("dev" for a local build); release.sh stamps it. The desktop add-on reads it
+   *  to keep _densha.js up to date (never downgrading). */
+  var DT_VERSION = "dev";
   var g = typeof globalThis !== "undefined" ? globalThis : window;
   var doc = g.document;
   /** Desktop Anki with the add-on: its store and the card id, taken once as this script runs (the add-on sets them
@@ -2659,7 +2662,7 @@
   ].join("\n");
 
   // ---- entry ------------------------------------------------------------------------------------
-  g.DenshaTabi = { mount: mount };
+  g.DenshaTabi = { mount: mount, version: DT_VERSION };
   if (g.DT_TEST === true) {
     g.DT_TEST = { KEY: KEY, DEV_DAY_KEY: DEV_DAY_KEY, STATIONS: STATIONS, REGIONS: REGIONS, MODELS: MODELS, COLORS: COLORS,
       PASSENGERS: PASSENGERS, SPECIALS: SPECIALS, fresh: fresh, load: load, save: save, tidy: tidy, today: today, dayNo: dayNo,

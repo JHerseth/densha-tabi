@@ -214,3 +214,130 @@ class AddonTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def load_setup():
+    """addon/setup.py on its own (pure; no aqt needed)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("densha_setup", os.path.join(ROOT, "addon", "setup.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+S = load_setup()
+SAMPLE = """{{FrontSide}}
+<hr id=answer>
+<div class="a">{{よみ}}</div>
+
+<div id="densha" data-card="{{CardID}}"></div>
+<script src="_densha.js"></script>"""
+
+
+class TemplateTest(unittest.TestCase):
+    def test_detect(self):
+        self.assertEqual(S.detect("{{Back}}"), {"present": False, "marked": False, "plain": False, "dev": False})
+        self.assertEqual(S.detect(SAMPLE), {"present": True, "marked": False, "plain": True, "dev": False})
+        self.assertEqual(S.detect("x\n" + S.block(True)), {"present": True, "marked": True, "plain": False, "dev": True})
+        odd = '<div id="densha" data-card="{{CardID}}" data-dev="1"></div>   \r\n\t<script src="_densha.js"></script>'
+        self.assertEqual(S.detect(odd)["plain"], True)
+        self.assertEqual(S.detect(odd)["dev"], True)
+        self.assertEqual(S.detect('<div id="densha" data-card="{{CardID}}"></div><script src="_densha.js"></script>')["plain"], True)
+
+    def test_add_is_idempotent_and_replaces_the_plain_snippet(self):
+        once = S.add("{{Back}}")
+        self.assertEqual(once, "{{Back}}\n" + S.block())
+        self.assertEqual(S.add(once), once)
+        both = SAMPLE + "\n" + S.block()
+        fixed = S.add(both)
+        self.assertEqual(fixed.count("densha-tabi:begin"), 1)
+        self.assertEqual(fixed.count('id="densha"'), 1)
+        self.assertTrue(fixed.startswith("{{FrontSide}}\n<hr id=answer>\n<div class=\"a\">{{よみ}}</div>\n"))
+        self.assertEqual(S.add(SAMPLE).count('id="densha"'), 1)
+
+    def test_remove_takes_exactly_ours(self):
+        tmpl = "<b>{{Back}}</b>\n<script>var x = 1;</script>"
+        self.assertEqual(S.remove(S.add(tmpl)), tmpl)
+        self.assertEqual(S.remove(S.add(tmpl, dev=True)), tmpl)
+        self.assertEqual(S.remove(SAMPLE), SAMPLE[: SAMPLE.index("\n<div id=")])
+        self.assertEqual(S.remove(tmpl), tmpl)
+        other = '<div id="densha2"></div>\n<script src="other.js"></script>'
+        self.assertEqual(S.remove(other), other)
+        mid = "A\n" + S.block() + "\nB"
+        self.assertEqual(S.remove(mid), "A\nB")
+
+    def test_test_mode_toggle(self):
+        on = S.add("{{Back}}", dev=True)
+        self.assertTrue(S.detect(on)["dev"])
+        off = S.add(on, dev=False)
+        self.assertFalse(S.detect(off)["dev"])
+        self.assertEqual(off, "{{Back}}\n" + S.block())
+
+    def test_plan_only_back_templates_and_only_changes(self):
+        nts = [
+            {"id": 1, "name": "A", "tmpls": [{"ord": 0, "name": "c1", "qfmt": "{{F}}", "afmt": "{{B}}"},
+                                              {"ord": 1, "name": "c2", "qfmt": "{{F}}", "afmt": SAMPLE}]},
+            {"id": 2, "name": "B", "tmpls": [{"ord": 0, "name": "c", "qfmt": "{{F}}", "afmt": "{{B}}"}]},
+        ]
+        out = S.plan(nts, {(1, 0): True, (1, 1): False, (2, 0): False}, {1: False})
+        self.assertEqual([nt["id"] for nt in out], [1])
+        self.assertTrue(S.detect(out[0]["tmpls"][0]["afmt"])["marked"])
+        self.assertFalse(S.detect(out[0]["tmpls"][1]["afmt"])["present"])
+        self.assertEqual(out[0]["tmpls"][0]["qfmt"], "{{F}}")
+        self.assertEqual(nts[0]["tmpls"][0]["afmt"], "{{B}}")                 # the originals untouched
+        self.assertEqual(S.remove_all(nts)[0]["tmpls"][1]["afmt"], SAMPLE[: SAMPLE.index("\n<div id=")])
+        self.assertEqual(len(S.remove_all(nts)), 1)
+
+
+class ScriptVersionTest(unittest.TestCase):
+    def test_versions(self):
+        self.assertEqual(S.script_version('/* でんしゃ たび */\n(function(){\n  var DT_VERSION = "1.2.0";'), "1.2.0")
+        self.assertEqual(S.script_version('/* でんしゃ たび */ var DT_VERSION = "dev";'), "dev")
+        self.assertEqual(S.script_version("/* でんしゃ たび (Train Trip) */ old release"), "")
+        self.assertIsNone(S.script_version("someone else's script"))
+        self.assertIsNone(S.script_version(None))
+        self.assertEqual(S.parse("1.10.0"), (1, 10, 0))
+        self.assertIsNone(S.parse("dev"))
+        self.assertIsNone(S.parse("1.0-beta"))
+
+    def test_is_newer(self):
+        self.assertTrue(S.is_newer("1.2.10", "1.2.9"))
+        self.assertFalse(S.is_newer("1.2.0", "1.2.0"))
+        self.assertFalse(S.is_newer("1.1.0", "1.2.0"))          # never a downgrade
+        self.assertFalse(S.is_newer("dev", "1.0.0"))             # a dev build never replaces anything
+        self.assertFalse(S.is_newer("2.0.0", "dev"))             # an installed dev build is never replaced
+        self.assertTrue(S.is_newer("1.1.0", ""))                 # unstamped (older release): older than any number
+        self.assertFalse(S.is_newer("1.1.0", None))              # not our file
+
+    def test_should_copy(self):
+        stamped = lambda v: '/* でんしゃ たび */ var DT_VERSION = "%s";' % v
+        # profile open: never creates, refreshes an older one only
+        self.assertFalse(S.should_copy(None, "1.2.0", creating=False))
+        self.assertTrue(S.should_copy(stamped("1.1.0"), "1.2.0", creating=False))
+        self.assertFalse(S.should_copy(stamped("1.3.0"), "1.2.0", creating=False))
+        self.assertFalse(S.should_copy(stamped("dev"), "1.2.0", creating=False))
+        self.assertFalse(S.should_copy(stamped("1.1.0"), "dev", creating=False))
+        self.assertFalse(S.should_copy(stamped("1.1.0"), None, creating=False))
+        # applying "Add": creates a missing one, else the same rule
+        self.assertTrue(S.should_copy(None, "1.2.0", creating=True))
+        self.assertFalse(S.should_copy(stamped("1.3.0"), "1.2.0", creating=True))
+        self.assertTrue(S.should_copy("/* でんしゃ たび */", "1.2.0", creating=True))
+
+    def test_write_media_replaces_with_a_rename(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "_densha.js")
+            with open(p, "w") as f:
+                f.write("old")
+            S.write_media(d, "_densha.js", b"new")
+            with open(p) as f:
+                self.assertEqual(f.read(), "new")
+            self.assertEqual(sorted(os.listdir(d)), ["_densha.js"])     # no temporary file left
+
+
+class ReleaseStampTest(unittest.TestCase):
+    def test_the_game_has_the_stamp_release_sh_replaces(self):
+        with open(os.path.join(ROOT, "densha.js"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn('var DT_VERSION = "dev";', text)
+        self.assertEqual(S.script_version(text), "dev")

@@ -72,14 +72,21 @@ Good to know
 
 Desktop Anki (optional)
 -----------------------
-Desktop Anki can't keep the game's save by itself, so it needs the add-on:
+Desktop Anki can't keep the game's save by itself, so it needs the add-on, which also does
+the setup for you:
 1. In desktop Anki: Tools → Add-ons → Install from file… → choose densha-tabi.ankiaddon.
 2. Restart Anki.
-The game then appears on the back of cards on desktop too. Desktop has its OWN train, separate
-from the phone's: its save is kept in your collection and syncs between desktop computers
-through AnkiWeb (the phone keeps its save on the phone). A card pays once a day on each.
-Click the train button to open the game; Esc or a click outside closes it. Anki's shortcuts
-(space, 1–4) still work while it's open, and answering closes it.
+3. Tools → でんしゃ たび → Add the train to note types… → tick the card types whose back should
+   move the train → Apply. That's all: it adds the two lines to those back templates and puts
+   _densha.js into your media folder.
+The add-on keeps _densha.js up to date on desktop (never replacing a newer one), and your
+phone gets it through sync. "Remove the train from all note types" in the same menu takes it
+out again (the script and the save are kept).
+Desktop has its OWN train, separate from the phone's: its save is kept in your collection and
+syncs between desktop computers through AnkiWeb (the phone keeps its save on the phone). A card
+pays once a day on each. Click the train button to open the game; Esc or a click outside closes
+it. Anki's shortcuts (space, 1–4) still work while it's open, and answering closes it.
+Phone only? You don't need the add-on: use option A or B above.
 
 Test mode (for trying things out)
 ---------------------------------

@@ -4,3 +4,4 @@ out/
 _kleeone-*.ttf
 dist/
 __pycache__/
+addon/_densha.js

@@ -56,3 +56,10 @@ if gui_hooks is not None:
     gui_hooks.card_will_show.append(_card_will_show)
     gui_hooks.webview_did_receive_js_message.append(_on_js_message)
     gui_hooks.profile_will_close.append(_profile_closed)
+    try:  # the setup menu and keeping _densha.js up to date (Qt; not available in tests)
+        from . import ui
+
+        ui.add_menu()
+        gui_hooks.profile_did_open.append(ui.on_profile_open)
+    except Exception as e:  # noqa: BLE001
+        log("setup menu unavailable: %r" % (e,))

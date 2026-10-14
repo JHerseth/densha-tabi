@@ -62,12 +62,22 @@ answers. The save lives in that phone's localStorage and isn't synced. It can sh
 ### Desktop Anki
 
 Desktop Anki forgets a card's localStorage (its card view keeps no storage between launches), so on desktop the
-game needs a small add-on, `densha-tabi.ankiaddon` (in the release zip): Tools → Add-ons → Install from file, then
-restart Anki. The add-on keeps the desktop save in the collection, so it syncs between desktop computers through
-AnkiWeb. It's a **separate train** from the phone's (the phone's save stays on the phone), and a card pays once a
-day on each. On a big window the game opens as a phone-sized column over the reviewer; Esc or a click outside
-closes it. Anki's own shortcuts (space, 1–4, …) still work while it's open; answering closes it. Details:
+game needs a small add-on, `densha-tabi.ankiaddon` (in the release zip). It also does the setup:
+
+1. Tools → Add-ons → Install from file → `densha-tabi.ankiaddon`, then restart Anki.
+2. Tools → でんしゃ たび → **Add the train to note types…**, tick the card types whose back should move the train,
+   Apply. Done: it adds the slot to those back templates and puts `_densha.js` in your media folder.
+
+The add-on keeps `_densha.js` up to date on desktop (it ships the script and replaces an older one, never a newer
+one), and phones get it through sync. "Remove the train from all note types" in the same menu takes it out again
+(the script and the save stay). The desktop save is kept in the collection, so it syncs between desktop computers
+through AnkiWeb. It's a **separate train** from the phone's (the phone's save stays on the phone), and a card pays
+once a day on each. On a big window the game opens as a phone-sized column over the reviewer; Esc or a click
+outside closes it. Anki's own shortcuts (space, 1–4, …) still work while it's open; answering closes it. Details:
 [DESKTOP.md](DESKTOP.md).
+
+Phone-only users don't need the add-on: copy `_densha.js` by hand and paste the snippet (above), or import the
+sample deck.
 
 ### Test mode
 
