@@ -87,7 +87,12 @@ The add-on also does the setup, so a desktop user never edits a template or copi
   - Added as a marked block at the end of the back template:
     `<!-- densha-tabi:begin -->`, the two-line snippet, `<!-- densha-tabi:end -->`.
   - Detection also finds the plain two-line snippet older decks have (the sample deck's), with or without
-    `data-dev="1"` and with any whitespace between its two lines. Removing a card type removes exactly our block
+    `data-dev="1"`, with any whitespace between its two lines, and together with a `<!-- でんしゃ たび … -->`
+    comment line right above it (the release's template-snippet.html has one), which is converted or removed with it.
+  - Saved with `update_dict(nt, skip_checks=True)` (plain `update_dict` on Anki versions without the parameter):
+    we only add or remove our own valid block, so a template error a deck already has can't block it. A note type
+    that changed since the dialog read it, or still fails to save, is skipped and named in the result; the others
+    are saved, and the op itself never fails (a failed op would clear Anki's undo history). Removing a card type removes exactly our block
     or that snippet and nothing else; adding never duplicates (an existing plain snippet is replaced by the block).
   - Not a schema change: Anki's own card layout screen treats template text edits as basic changes
     (`aqt/clayout.py` calls `change_tracker.mark_basic()` for them, lines 503/753/849/888/925) and only asks for a
@@ -102,7 +107,10 @@ The add-on also does the setup, so a desktop user never edits a template or copi
   `_densha.js` into the profile's media folder if it's missing or older. When a profile opens, it refreshes
   `_densha.js` only if the file is already there and the bundled one is newer. Rules (`addon/setup.py`):
   - versions are compared as dotted numbers (`1.2.10` > `1.2.9`); a bundled `"dev"` build never replaces anything;
-  - an installed `"dev"` build is never replaced (a developer's own file);
+  - an installed `"dev"` build is never replaced on profile open (a developer's own file), but an explicit Apply
+    replaces it with a numbered release (profiles set up from a dev build, or a deck exported from one, would
+    otherwise never get updates); `scripts/anki_setup.py --version X.Y.Z` stamps what it uploads, and
+    `release.sh` refuses a sample deck whose `_densha.js` isn't stamped with the release's version;
   - an installed script with no version stamp at all (released before the stamp) counts as older than any
     numbered release;
   - never a downgrade (a newer file may have come from a phone-side release through sync), never a new file in

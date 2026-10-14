@@ -32,7 +32,16 @@ stamp > "$OUT/_densha.js"
 cp "$ADDON" "$OUT/densha-tabi.ankiaddon"
 # Klee One's licence (SIL OFL 1.1), verbatim from the font's own repository, travels with the font in the sample deck.
 cp release/OFL-KleeOne.txt "$OUT/"
-[ -n "$APKG" ] && cp "$APKG" "$OUT/todoufuken.apkg"
+if [ -n "$APKG" ]; then
+  # the sample deck's own _densha.js must be this release, or decks set up from it would never be updated
+  HAVE=$(python3 scripts/apkg_version.py "$APKG")
+  if [ "$HAVE" != "$VER" ]; then
+    echo "release.sh: $APKG has _densha.js version '${HAVE}', not $VER." >&2
+    echo "  Re-run scripts/anki_setup.py --profile NAME --version $VER, re-export the deck, then release again." >&2
+    exit 1
+  fi
+  cp "$APKG" "$OUT/todoufuken.apkg"
+fi
 (cd dist && zip -qr "densha-tabi-$VER.zip" "densha-tabi-$VER")
 echo "dist/densha-tabi-$VER.zip"
 echo "$ADDON"

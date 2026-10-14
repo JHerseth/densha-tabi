@@ -7,7 +7,7 @@ from typing import Any
 from aqt import mw
 from aqt.operations import CollectionOp
 from aqt.qt import (
-    QCheckBox, QDialog, QDialogButtonBox, QGroupBox, QLabel, QMenu, QScrollArea, QVBoxLayout, QWidget,
+    QCheckBox, QDialog, QDialogButtonBox, QGroupBox, QLabel, QMenu, QScrollArea, Qt, QVBoxLayout, QWidget,
 )
 from aqt.utils import askUser, showWarning, tooltip
 
@@ -47,12 +47,41 @@ def refresh_script(col: Any, creating: bool) -> str:
     return "copied " + str(version)
 
 
-def _save(col: Any, changed: list[dict[str, Any]]) -> Any:
-    """Save note types as one undo step."""
-    pos = col.add_custom_undo_entry(UNDO_NAME)
-    for nt in changed:
+def _update(col: Any, nt: dict[str, Any]) -> None:
+    """Save one note type. skip_checks: we only add or remove our own (valid) block, so a template error the user's
+    deck already has (an imported {{Nope}}) mustn't stop us; Anki before 2.3 has no skip_checks."""
+    try:
+        col.models.update_dict(nt, skip_checks=True)
+    except TypeError:
         col.models.update_dict(nt)
+
+
+def _save(col: Any, changed: list[dict[str, Any]], skipped: list[str]) -> Any:
+    """Save note types as one undo step. Before it starts, a note type that changed (or went) since the dialog read
+    it is skipped; one that still fails to save is skipped too, so the others are saved and the op never fails (a
+    failed op would clear Anki's undo history). Their names go into skipped."""
+    ready = []
+    for nt in changed:
+        now = col.models.get(nt["id"])
+        if not now or now.get("mod") != nt.get("mod"):
+            skipped.append(nt["name"])
+        else:
+            ready.append(nt)
+    pos = col.add_custom_undo_entry(UNDO_NAME)
+    for nt in ready:
+        try:
+            _update(col, nt)
+        except Exception as e:  # noqa: BLE001
+            log("couldn't save note type %r: %r" % (nt["name"], e))
+            skipped.append(nt["name"])
     return col.merge_undo_entries(pos)
+
+
+def _result(changed: list[dict[str, Any]], skipped: list[str], extra: str = "") -> str:
+    msg = "でんしゃ たび: %d note type(s) updated%s" % (len(changed) - len(skipped), extra)
+    if skipped:
+        msg += ". Skipped (changed meanwhile or couldn't be saved): " + ", ".join(skipped)
+    return msg
 
 
 class SetupDialog(QDialog):
@@ -103,6 +132,7 @@ class SetupDialog(QDialog):
         buttons.rejected.connect(self.reject)
         outer.addWidget(buttons)
         self.resize(460, 560)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
     def apply(self) -> None:
         wanted: dict[tuple[int, int], bool] = {}
@@ -113,6 +143,7 @@ class SetupDialog(QDialog):
         devs = {nid: box.isChecked() for nid, box in self.devs.items()}
         changed = setup.plan(self.notetypes, wanted, devs)
         adding = any(wanted.values())
+        skipped: list[str] = []
 
         def done(_: Any) -> None:
             note = ""
@@ -121,14 +152,13 @@ class SetupDialog(QDialog):
                     note = refresh_script(mw.col, creating=True)
                 except OSError as e:
                     showWarning("でんしゃ たび: couldn't copy _densha.js into the media folder: %s" % e)
-            tooltip("でんしゃ たび: %d note type(s) updated%s" % (
-                len(changed), "; _densha.js " + note if note.startswith("copied") else ""))
-            self.accept()
+            self.accept()          # close first; the tooltip belongs to the main window
+            tooltip(_result(changed, skipped, "; _densha.js " + note if note.startswith("copied") else ""), parent=mw)
 
         if not changed:
             done(None)
             return
-        CollectionOp(self, lambda col: _save(col, changed)).success(done).run_in_background()
+        CollectionOp(self, lambda col: _save(col, changed, skipped)).success(done).run_in_background()
 
 
 def open_dialog() -> None:
@@ -149,8 +179,9 @@ def remove_everywhere() -> None:
         "left alone; you can add it back later." % len(changed)
     ):
         return
-    CollectionOp(mw, lambda col: _save(col, changed)).success(
-        lambda _: tooltip("でんしゃ たび removed from %d note type(s)." % len(changed))
+    skipped: list[str] = []
+    CollectionOp(mw, lambda col: _save(col, changed, skipped)).success(
+        lambda _: tooltip(_result(changed, skipped, " (removed)"), parent=mw)
     ).run_in_background()
 
 

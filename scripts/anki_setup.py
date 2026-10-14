@@ -8,6 +8,7 @@ field (fields updated, never duplicated). --dev puts data-dev="1" on the slot (t
 Media (_densha.js) is uploaded as base64, since a Flatpak Anki can't read files outside its sandbox.
 """
 import argparse
+import re
 import base64
 import json
 import pathlib
@@ -45,7 +46,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", required=True, help="the Anki profile that must be open")
     ap.add_argument("--dev", action="store_true", help='data-dev="1" on the slot')
+    ap.add_argument("--version", default="dev",
+                    help='stamp the uploaded _densha.js with this release version (X.Y.Z; default "dev"), so the desktop '
+                         'add-on can update it later and a deck exported from this profile carries it')
     a = ap.parse_args()
+    if a.version != "dev" and not re.fullmatch(r"\d+(\.\d+)*", a.version):
+        sys.exit("--version must be X.Y.Z (or dev)")
 
     active = call("getActiveProfile")
     if active != a.profile:
@@ -81,8 +87,12 @@ def main():
 
     js = ROOT / "media" / "_densha.js"
     if js.exists():
-        name = call("storeMediaFile", filename="_densha.js", data=base64.b64encode(js.read_bytes()).decode())
-        print("uploaded", name)
+        text = js.read_text(encoding="utf-8")
+        stamped = text.replace('var DT_VERSION = "dev";', 'var DT_VERSION = "%s";' % a.version, 1)
+        if a.version != "dev" and stamped == text:
+            sys.exit("media/_densha.js has no DT_VERSION stamp to replace")
+        name = call("storeMediaFile", filename="_densha.js", data=base64.b64encode(stamped.encode("utf-8")).decode())
+        print("uploaded", name, "(DT_VERSION %s)" % a.version)
     else:
         print("media/_densha.js not built yet: skipped the upload")
 

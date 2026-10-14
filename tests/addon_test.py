@@ -341,3 +341,140 @@ class ReleaseStampTest(unittest.TestCase):
             text = f.read()
         self.assertIn('var DT_VERSION = "dev";', text)
         self.assertEqual(S.script_version(text), "dev")
+
+
+class ReviewFixesTest(unittest.TestCase):
+    def test_apply_replaces_an_installed_dev_build_but_profile_open_doesnt(self):
+        dev = '/* でんしゃ たび */ var DT_VERSION = "dev";'
+        self.assertTrue(S.should_copy(dev, "1.2.0", creating=True))
+        self.assertFalse(S.should_copy(dev, "1.2.0", creating=False))
+        self.assertFalse(S.should_copy(dev, "dev", creating=True))
+
+    def test_the_comment_line_above_the_plain_snippet_goes_with_it(self):
+        with open(os.path.join(ROOT, "release", "template-snippet.html"), encoding="utf-8") as f:
+            snip = f.read().rstrip("\n")
+        tmpl = "{{Back}}\n" + snip
+        self.assertTrue(S.detect(tmpl)["plain"])
+        self.assertEqual(S.remove(tmpl), "{{Back}}")
+        conv = S.add(tmpl)
+        self.assertEqual(conv, "{{Back}}\n" + S.block())
+        self.assertNotIn("でんしゃ たび:", conv)
+        other = "<!-- my own comment -->\n{{Back}}"
+        self.assertEqual(S.remove(other + "\n" + snip), other)
+
+
+def load_ui():
+    """addon/ui.py with stub aqt modules (Qt classes are never instantiated here)."""
+    class Anything:
+        def __init__(self, *a, **k):
+            pass
+    aqt = types.ModuleType("aqt")
+    aqt.mw = types.SimpleNamespace(col=None)
+    qt = types.ModuleType("aqt.qt")
+    for n in ["QCheckBox", "QDialog", "QDialogButtonBox", "QGroupBox", "QLabel", "QMenu", "QScrollArea", "Qt", "QVBoxLayout", "QWidget"]:
+        setattr(qt, n, Anything)
+    ops = types.ModuleType("aqt.operations")
+    ops.CollectionOp = Anything
+    utils = types.ModuleType("aqt.utils")
+    utils.askUser = utils.showWarning = utils.tooltip = lambda *a, **k: None
+    sys.modules.update({"aqt": aqt, "aqt.qt": qt, "aqt.operations": ops, "aqt.utils": utils})
+    for name in [m for m in sys.modules if m == "addon" or m.startswith("addon.")]:
+        del sys.modules[name]
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    import addon.ui as ui  # noqa: E402
+    return ui
+
+
+class SaveTest(unittest.TestCase):
+    def setUp(self):
+        self.ui = load_ui()
+
+    def col(self, stored, fail=(), old_anki=False):
+        log = []
+
+        class Models:
+            def get(self, nid):
+                return json.loads(json.dumps(stored[nid])) if nid in stored else None
+
+            def update_dict(self, nt, skip_checks=None):
+                if old_anki and skip_checks is not None:
+                    raise TypeError("unexpected keyword argument 'skip_checks'")
+                if nt["name"] in fail:
+                    raise RuntimeError("template error")
+                log.append(("update", nt["name"], skip_checks))
+                stored[nt["id"]] = nt
+
+        c = types.SimpleNamespace(models=Models(), log=log)
+        c.add_custom_undo_entry = lambda name: log.append(("undo", name)) or 7
+        c.merge_undo_entries = lambda pos: log.append(("merge", pos)) or "changes"
+        return c
+
+    def nt(self, nid, name, mod=1):
+        return {"id": nid, "name": name, "mod": mod, "tmpls": []}
+
+    def test_one_undo_step_with_skip_checks(self):
+        stored = {1: self.nt(1, "A"), 2: self.nt(2, "B")}
+        c = self.col(stored)
+        skipped = []
+        self.assertEqual(self.ui._save(c, [self.nt(1, "A"), self.nt(2, "B")], skipped), "changes")
+        self.assertEqual(c.log, [("undo", "でんしゃ たび setup"), ("update", "A", True), ("update", "B", True), ("merge", 7)])
+        self.assertEqual(skipped, [])
+
+    def test_old_anki_without_skip_checks(self):
+        stored = {1: self.nt(1, "A")}
+        c = self.col(stored, old_anki=True)
+        self.ui._save(c, [self.nt(1, "A")], [])
+        self.assertIn(("update", "A", None), c.log)
+
+    def test_changed_or_failing_note_types_are_skipped_and_the_rest_saved(self):
+        stored = {1: self.nt(1, "A"), 2: self.nt(2, "B", mod=5), 3: self.nt(3, "C")}
+        c = self.col(stored, fail=("C",))
+        skipped = []
+        self.ui._save(c, [self.nt(1, "A"), self.nt(2, "B", mod=4), self.nt(3, "C"), self.nt(9, "Gone")], skipped)
+        self.assertEqual(sorted(skipped), ["B", "C", "Gone"])
+        self.assertEqual([x for x in c.log if x[0] == "update"], [("update", "A", True)])
+        self.assertEqual(c.log[-1], ("merge", 7))           # the op still finishes normally
+        self.assertIn("Skipped", self.ui._result([1, 2, 3, 4], skipped))
+
+
+class ApkgVersionTest(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("apkg_version", os.path.join(ROOT, "scripts", "apkg_version.py"))
+        self.m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.m)
+
+    def test_legacy_format(self):
+        import tempfile
+        import zipfile
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "deck.apkg")
+            with zipfile.ZipFile(p, "w") as z:
+                z.writestr("media", json.dumps({"0": "font.ttf", "1": "_densha.js"}))
+                z.writestr("0", b"x")
+                z.writestr("1", '/* でんしゃ たび */\n  var DT_VERSION = "1.4.0";')
+            self.assertEqual(self.m.densha_version(p), "1.4.0")
+            with zipfile.ZipFile(p, "w") as z:
+                z.writestr("media", json.dumps({"0": "font.ttf"}))
+            self.assertIsNone(self.m.densha_version(p))
+
+    def test_new_format(self):
+        try:
+            from compression import zstd
+        except ImportError:
+            self.skipTest("needs Python 3.14 for zstd")
+        import tempfile
+        import zipfile
+
+        def entry(name):
+            b = name.encode()
+            body = bytes([0x0A, len(b)]) + b + bytes([0x10, 5])
+            return bytes([0x0A, len(body)]) + body
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "deck.apkg")
+            with zipfile.ZipFile(p, "w") as z:
+                z.writestr("media", zstd.compress(entry("a.png") + entry("_densha.js")))
+                z.writestr("0", zstd.compress(b"png"))
+                z.writestr("1", zstd.compress('var DT_VERSION = "2.0.1";'.encode()))
+            self.assertEqual(self.m.densha_version(p), "2.0.1")

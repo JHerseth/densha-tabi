@@ -18,7 +18,8 @@ _BLOCK = re.compile(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END), re.S)
 # the plain two-line snippet older decks have (the sample deck's, the README's), data-dev either side of data-card
 _DEV = r'(?: data-dev="1")?'
 _PLAIN = re.compile(
-    r'\n?<div id="densha"' + _DEV + r' data-card="\{\{CardID\}\}"' + _DEV + r'></div>[ \t]*(?:\r?\n)?[ \t]*'
+    # with the one comment line that often sits right above it (the release's template-snippet.html, the sample deck)
+    r'\n?(?:<!-- でんしゃ たび[^>]*-->[ \t]*\r?\n)?<div id="densha"' + _DEV + r' data-card="\{\{CardID\}\}"' + _DEV + r'></div>[ \t]*(?:\r?\n)?[ \t]*'
     r'<script src="_densha\.js"></script>'
 )
 _DEV_IN = re.compile(r'data-dev="1"')
@@ -127,18 +128,23 @@ def is_newer(bundled: Optional[str], installed: Optional[str]) -> bool:
 
 
 def should_copy(installed_text: Optional[str], bundled: Optional[str], creating: bool) -> bool:
-    """Whether to write the bundled script into the media folder. creating: the user just added the game to a note
-    type (a missing file is then created); on profile open (creating False) a missing file is never created."""
+    """Whether to write the bundled script into the media folder. creating: the user just applied "Add" (a missing
+    file is then created, and a numbered release replaces an installed "dev" one, e.g. from a profile set up with a
+    dev build); on profile open (creating False) a missing file is never created and "dev" is never replaced."""
     if bundled is None:
         return False
     if installed_text is None:
         return creating
-    return is_newer(bundled, script_version(installed_text))
+    installed = script_version(installed_text)
+    if creating and installed == "dev" and parse(bundled) is not None:
+        return True
+    return is_newer(bundled, installed)
 
 
 def write_media(folder: str, name: str, data: bytes) -> None:
     """Replace folder/name with data: a temporary file in the same folder, then a rename over the old one (the media
-    folder's mtime changes, so Anki's media sync notices the file)."""
+    folder's mtime changes, so Anki's media sync notices the file; an in-place overwrite would be missed). A media
+    scan running at that very moment may see the short-lived ".densha-*.tmp" file; that's harmless."""
     fd, tmp = tempfile.mkstemp(prefix=".densha-", suffix=".tmp", dir=folder)
     try:
         with os.fdopen(fd, "wb") as f:
