@@ -27,63 +27,86 @@ All at phone size (360 × 740).
 
 ## Download
 
-Get `densha-tabi-<version>.zip` from the [releases page](../../releases). It has the script, the template snippet,
-install instructions (`INSTALL.txt`) and an optional sample deck, `todoufuken.apkg`: Japan's 47 prefectures in 94
-cards (reading the kanji, and guessing the prefecture from what it's famous for), with the game already set up.
-Importing it is the quickest way to try the game.
+Get it from the [releases page](../../releases):
 
-## Setup in AnkiDroid
+- `densha-tabi-<version>.zip`: everything: the game (`_densha.js`), the desktop add-on
+  (`densha-tabi.ankiaddon`), the template snippet, install instructions (`INSTALL.txt`) and an optional sample
+  deck, `todoufuken.apkg`: Japan's 47 prefectures in 94 cards (reading the kanji, and guessing the prefecture from
+  what it's famous for), with the game already set up.
+- `densha-tabi-<version>.ankiaddon`: just the desktop add-on.
 
-Needs AnkiDroid 2.23 or later; Android 11 or later is recommended for the emoji.
+## Install
 
-1. Copy `_densha.js` into the profile's `collection.media` folder (on desktop Anki: Tools → Check Media → View
-   Files, then sync). The leading `_` keeps Check Media from deleting it. The Klee One fonts
-   `_kleeone-regular.ttf` / `_kleeone-semibold.ttf` are used if they are there too (the sample deck brings them);
-   otherwise it falls back to the phone's font.
-2. Add this at the end of the **back** template of any card type (one slot per card back):
+The game runs in **AnkiDroid** (phone) and, with the add-on, in **desktop Anki**. Phone and desktop each keep
+their own train (see [Phone and desktop](#phone-and-desktop)).
 
-   ```html
-   <div id="densha" data-card="{{CardID}}"></div>
-   <script src="_densha.js"></script>
-   ```
+### Quickest: the sample deck
 
-3. AnkiDroid settings: turn on the **new study screen** (Settings → New study screen), and turn on
-   **"localStorage in Study Screen"** (Settings → Advanced, under Workarounds). The game saves there; without it
-   the card shows a one-line reminder instead of the game.
-4. Sync. A small train chip appears bottom-left on the back of cards; tap it to open the game.
-
-Without the desktop add-on (below), it only runs in AnkiDroid's study screen; the previewer, browser and card
-layout screen never show it. A card pays once a day
-(the day starts at 04:00, as in Anki); showing the answer again or undoing pays nothing. It can't see which
-answer button was pressed (the new study screen gives card scripts no way to), so it rewards studying, not right
-answers. The save lives in that phone's localStorage and isn't synced. It can share a card with other card games
-(it uses `#densha`, `dt-` classes and the `densha-tabi` localStorage key).
+Import `todoufuken.apkg` (desktop: File → Import; AnkiDroid: ⋮ → Import). It brings the cards, `_densha.js` and
+the font, with the game already in the templates. Then do the AnkiDroid settings below (phone) or install the
+add-on (desktop).
 
 ### Desktop Anki
 
-Desktop Anki forgets a card's localStorage (its card view keeps no storage between launches), so on desktop the
-game needs a small add-on, `densha-tabi.ankiaddon` (in the release zip). It also does the setup:
+Needs Anki 2.1.50 or later.
 
-1. Tools → Add-ons → Install from file → `densha-tabi.ankiaddon`, then restart Anki.
-2. Tools → でんしゃ たび → **Add the train to note types…**, tick the card types whose back should move the train,
-   Apply. Done: it adds the slot to those back templates and puts `_densha.js` in your media folder.
+1. Download `densha-tabi-<version>.ankiaddon` from the releases page (it's also inside the zip).
+2. In Anki: **Tools → Add-ons → Install from file…**, pick the `.ankiaddon` file, then **restart Anki**.
+3. **Tools → でんしゃ たび → Add the train to note types…**: tick the card types whose answer side should move the
+   train, then **Apply**. The add-on adds the game to those back templates and puts `_densha.js` in your media
+   folder. (One step in Edit → Undo; no full sync needed.)
+4. Study as usual: on the answer side a small train chip appears bottom-left. Click it to open the game.
 
-The add-on keeps `_densha.js` up to date on desktop (it ships the script and replaces an older one, never a newer
-one), and phones get it through sync. "Remove the train from all note types" in the same menu takes it out again
-(the script and the save stay). The desktop save is kept in the collection, so it syncs between desktop computers
-through AnkiWeb. It's a **separate train** from the phone's (the phone's save stays on the phone), and a card pays
-once a day on each. On a big window the game opens as a phone-sized column over the reviewer; Esc or a click
-outside closes it. Anki's own shortcuts (space, 1–4, …) still work while it's open; answering closes it. Details:
+The add-on keeps `_densha.js` up to date: a newer add-on replaces an older script (never a newer one), and your
+phone gets the new script through sync. **Tools → でんしゃ たび → Remove the train from all note types** takes it
+out again; the script and the save stay. Uninstalling the add-on stops the game on desktop (the templates keep
+the slot, which then shows nothing on desktop).
+
+On a big window the game opens as a phone-sized column over the reviewer; Esc or a click outside closes it.
+Anki's own shortcuts (space, 1–4, …) still work while it's open, and answering closes it. Details:
 [DESKTOP.md](DESKTOP.md).
 
-Phone-only users don't need the add-on: copy `_densha.js` by hand and paste the snippet (above), or import the
-sample deck.
+### AnkiDroid (phone)
+
+Needs AnkiDroid 2.23 or later; Android 11 or later is recommended for the emoji.
+
+1. Get the game onto the phone. Any of:
+   - set it up on desktop with the add-on (above) and sync; or
+   - import the sample deck; or
+   - by hand: copy `_densha.js` into the profile's `collection.media` folder (desktop: Tools → Check Media → View
+     Files, then sync; the leading `_` keeps Check Media from deleting it), and add this at the end of the
+     **back** template of each card type that should move the train:
+
+     ```html
+     <div id="densha" data-card="{{CardID}}"></div>
+     <script src="_densha.js"></script>
+     ```
+2. In AnkiDroid's settings, turn on the **new study screen** (Settings → New study screen), and turn on
+   **"localStorage in Study Screen"** (Settings → Advanced, under Workarounds). The game saves there; without it
+   the card shows a one-line reminder instead of the game.
+3. Sync, and study: a small train chip appears bottom-left on the answer side. Tap it to open the game.
+
+The Klee One fonts `_kleeone-regular.ttf` / `_kleeone-semibold.ttf` are used if they're in the media folder (the
+sample deck brings them); otherwise the game uses the phone's font.
+
+### Phone and desktop
+
+- **Separate trains.** The phone's save lives in AnkiDroid's localStorage on that phone; the desktop save lives
+  in the collection and syncs between desktop computers through AnkiWeb. AnkiDroid's study screen gives card
+  scripts nothing that syncs, so the two can't be merged. A card pays once a day on each.
+- **Where it shows.** Only while studying: AnkiDroid's new study screen, and desktop Anki's reviewer with the add-on.
+  The previewer, browser and card layout screen never show it, so looking at cards there pays nothing.
+- **What pays.** A card pays once a day when its answer is shown (the day starts at 04:00, as in Anki); showing
+  the answer again or undoing pays nothing. The game can't see which answer button was pressed, so it rewards
+  studying, not right answers.
+- It can share a card with other card games (it uses `#densha`, `dt-` classes and the `densha-tabi` storage key).
 
 ### Test mode
 
-`data-dev="1"` on the slot adds a ⚙ to the game's top bar: 🪙＋50, a past study day for the stamp card, ＋10 steps,
-arrive at the next station, move the game's day back or forward, and reset (asks first). It changes the real save
-on that phone, so use it in a test profile only.
+For trying things out without studying for a month: tick **Test mode** for a note type in the add-on's dialog, or
+add `data-dev="1"` to the slot by hand. A ⚙ then appears in the game's top bar: 🪙＋50, a past study day for the
+stamp card, ＋10 steps, arrive at the next station, move the game's day back or forward, and reset (asks first).
+It changes the real save, so use it in a test profile only.
 
 ## Development
 
