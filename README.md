@@ -54,7 +54,8 @@ Needs Anki 2.1.50 or later.
 2. In Anki: **Tools → Add-ons → Install from file…**, pick the `.ankiaddon` file, then **restart Anki**.
 3. **Tools → でんしゃ たび → Add the train to note types…**: tick the card types whose answer side should move the
    train, then **Apply**. The add-on adds the game to those back templates and puts `_densha.js` in your media
-   folder. (One step in Edit → Undo; no full sync needed.)
+   folder. Changed your mind? **Edit → Undo** reverts it all in one go. It only edits template text, so it
+   doesn't trigger a full sync: your next sync is a normal one.
 
    ![The add-on's setup dialog: a checkbox per card type, grouped by note type](docs/screenshots/addon-dialog.webp)
 
