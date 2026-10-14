@@ -55,6 +55,9 @@ Needs Anki 2.1.50 or later.
 3. **Tools → でんしゃ たび → Add the train to note types…**: tick the card types whose answer side should move the
    train, then **Apply**. The add-on adds the game to those back templates and puts `_densha.js` in your media
    folder. (One step in Edit → Undo; no full sync needed.)
+
+   ![The add-on's setup dialog: a checkbox per card type, grouped by note type](docs/screenshots/addon-dialog.webp)
+
 4. Study as usual: on the answer side a small train chip appears bottom-left. Click it to open the game.
 
 The add-on keeps `_densha.js` up to date: a newer add-on replaces an older script (never a newer one), and your

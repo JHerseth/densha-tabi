@@ -100,6 +100,10 @@ class SetupDialog(QDialog):
         )
         intro.setWordWrap(True)
         outer.addWidget(intro)
+        warn = QLabel("<small><b>Test mode</b> adds test buttons that change the real save; use it in a test "
+                      "profile only.</small>")
+        warn.setWordWrap(True)
+        outer.addWidget(warn)
         inner = QWidget()
         lay = QVBoxLayout(inner)
         for nt in self.notetypes:
@@ -118,9 +122,6 @@ class SetupDialog(QDialog):
             dev.setChecked(dev_on)
             self.devs[nt["id"]] = dev
             g.addWidget(dev)
-            warn = QLabel("<small>Test mode adds test buttons that change the real save; use it in a test profile only.</small>")
-            warn.setWordWrap(True)
-            g.addWidget(warn)
             lay.addWidget(group)
         lay.addStretch(1)
         scroll = QScrollArea()
@@ -131,6 +132,7 @@ class SetupDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply)
         buttons.rejected.connect(self.reject)
         outer.addWidget(buttons)
+        self.setMinimumSize(380, 420)     # never squeezed below a readable list
         self.resize(460, 560)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
