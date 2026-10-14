@@ -13,9 +13,8 @@ node --test >/dev/null
 OUT=dist/densha-tabi-$VER
 mkdir -p "$OUT"
 cp media/_densha.js release/INSTALL.txt release/template-snippet.html LICENSE "$OUT/"
-# Klee One's licence (SIL OFL 1.1) travels with the font, which the sample deck carries.
-{ echo "Klee One: Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee)"; echo
-  tail -n +3 /usr/share/licenses/google-noto-color-emoji-fonts/OFL.txt; } > "$OUT/OFL-KleeOne.txt"
+# Klee One's licence (SIL OFL 1.1), verbatim from the font's own repository, travels with the font in the sample deck.
+cp release/OFL-KleeOne.txt "$OUT/"
 [ -n "$APKG" ] && cp "$APKG" "$OUT/todoufuken.apkg"
 (cd dist && zip -qr "densha-tabi-$VER.zip" "densha-tabi-$VER")
 echo "dist/densha-tabi-$VER.zip"

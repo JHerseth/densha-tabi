@@ -85,3 +85,10 @@ A ⚙ button then appears in the game's top bar, with:
 
 Use it in a test profile or a copy of the template only. The test controls change the real
 save on that phone, so remove data-dev before handing the phone to the player.
+
+Credits
+-------
+The sample deck includes the Klee One font (_kleeone-regular.ttf, _kleeone-semibold.ttf),
+Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee), by Fontworks.
+It is licensed under the SIL Open Font License 1.1 (see OFL-KleeOne.txt), unmodified; only
+the file names were changed (a leading "_" keeps Anki from deleting them).
