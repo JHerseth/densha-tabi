@@ -8,7 +8,7 @@
   A phone-sized stand-in for AnkiDroid's study screen: window.ankidroid is stubbed, a fake card back carries the slot,
   and the control strip (tap "▼ preview") answers cards. Each answer swaps the card the way AnkiDroid does: the old
   slot is removed, a new one is added and densha.js runs again. Works from file:// and in headless Chrome.
-  URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?card=N (first CardID),
+  URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?strip=none (no strip at all),?card=N (first CardID),
   ?garden=URL (another card game on the same card: Kanpeki Garden's _garden.js with its #kg slot, to check they coexist).
 -->
 <style>
@@ -53,6 +53,7 @@
   if (q.get("card")) cid.value = q.get("card");
   dev.checked = q.get("dev") === "1";
   if (q.get("strip") === "0") document.getElementById("strip").open = false;
+  if (q.get("strip") === "none") document.getElementById("strip").style.display = "none";   // clean screenshots
   var words = [["山", "やま"], ["川", "かわ"], ["森", "もり"], ["空", "そら"], ["花", "はな"], ["雨", "あめ"], ["石", "いし"]];
   function status() {
     var o = offset();

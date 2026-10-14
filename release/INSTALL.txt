@@ -1,0 +1,87 @@
+でんしゃ たび (Train Trip) — a study-reward game for AnkiDroid
+================================================================
+
+What it is
+----------
+A little train game that lives on the back of your Anki cards. Every card you study moves a
+train one step around Japan, prefecture by prefecture (北海道 → 沖縄 and round again). Each new
+station gives an eki stamp for your stamp book, a souvenir and coins. Coins buy more lines to
+ride (山手線, 江ノ電, ゆいレール, 小田急小田原線, 東海道新幹線) and things for the train: new models,
+paint, extra cars and animal passengers.
+
+- It works with ANY deck and note type: it only reads the card's id, never its content.
+- It scales itself: the distance between stations follows your own pace, so one normal study
+  day is about one station whether you do 10 cards a day or 500.
+- A card pays once per day, when its answer side is shown (undo or re-showing pays nothing).
+- Studying on more days of the week gives a bigger daily bonus. Nothing is ever lost:
+  no streaks that reset, no timers, nothing random.
+- The game's text is Japanese (kana), written for children learning Japanese.
+
+Requirements
+------------
+- AnkiDroid 2.23 or later, with the NEW study screen turned on.
+  The game only appears in AnkiDroid's study screen. Desktop Anki, the previewer and the card
+  browser show nothing (that's on purpose: the save lives on the phone).
+- Android 11 or later recommended (for the emoji).
+
+Files in this zip
+-----------------
+  _densha.js             the game
+  template-snippet.html  the two lines to paste into a card template
+  todoufuken.apkg        optional sample deck: Japan's 47 prefectures (94 cards), with the game
+                         already set up — the easiest way to try it
+  LICENSE                MIT licence for the game
+  OFL-KleeOne.txt        licence of the Klee One font included in the sample deck
+
+Install, option A: try it with the sample deck (easiest)
+--------------------------------------------------------
+1. Import todoufuken.apkg (in AnkiDroid: ⋮ → Import; or in desktop Anki: File → Import, then
+   sync). This also installs _densha.js and the font into your media folder.
+2. Do the two AnkiDroid settings below, then study the とどうふけん deck.
+
+Install, option B: add it to your own deck
+------------------------------------------
+1. Put _densha.js into your profile's media folder (collection.media). On desktop Anki:
+   Tools → Check Media → View Files opens that folder; copy the file there and sync.
+   (The leading "_" keeps Check Media from ever deleting it.)
+2. Open Tools → Manage Note Types → (your note type) → Cards. On the BACK template of each card
+   type that should move the train, paste at the very end:
+
+       <div id="densha" data-card="{{CardID}}"></div>
+       <script src="_densha.js"></script>
+
+3. Sync, then do the two AnkiDroid settings below.
+
+AnkiDroid settings (both needed)
+--------------------------------
+1. Settings → New study screen → turn on the "New study screen" switch at the top.
+2. Settings → Advanced → turn on "localStorage in Study Screen" (under Workarounds).
+   The game saves there. Without it, the card shows a short reminder instead of the game.
+
+Then study as usual: on the back of a card a small train button appears in the bottom-left
+corner. Tap it to open the game.
+
+Good to know
+------------
+- The save lives on that phone only (AnkiDroid's localStorage). It isn't synced; clearing
+  AnkiDroid's app data deletes it.
+- It can sit on the same card as other card games (it uses its own #densha slot, dt- styles
+  and the "densha-tabi" storage key).
+- Updating: replace _densha.js with a newer one and sync. The save is kept.
+
+Test mode (for trying things out)
+---------------------------------
+Add data-dev="1" to the slot:
+
+    <div id="densha" data-dev="1" data-card="{{CardID}}"></div>
+
+A ⚙ button then appears in the game's top bar, with:
+  🪙＋50                       50 extra coins
+  ＋1 しゅっせき（まえの ひ）   add a past study day (fills the stamp card)
+  ＋10 すすむ                   move the train 10 steps
+  つぎの えきへ                 arrive at the next station now
+  ひ −1 / ひ ＋1                move the game's calendar a day back / forward
+  リセット                      wipe the save (asks first)
+
+Use it in a test profile or a copy of the template only. The test controls change the real
+save on that phone, so remove data-dev before handing the phone to the player.
