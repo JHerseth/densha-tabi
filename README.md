@@ -52,11 +52,22 @@ Needs AnkiDroid 2.23 or later; Android 11 or later is recommended for the emoji.
    the card shows a one-line reminder instead of the game.
 4. Sync. A small train chip appears bottom-left on the back of cards; tap it to open the game.
 
-It only runs in AnkiDroid's study screen (desktop Anki and the previewer show nothing). A card pays once a day
+Without the desktop add-on (below), it only runs in AnkiDroid's study screen; the previewer, browser and card
+layout screen never show it. A card pays once a day
 (the day starts at 04:00, as in Anki); showing the answer again or undoing pays nothing. It can't see which
 answer button was pressed (the new study screen gives card scripts no way to), so it rewards studying, not right
 answers. The save lives in that phone's localStorage and isn't synced. It can share a card with other card games
 (it uses `#densha`, `dt-` classes and the `densha-tabi` localStorage key).
+
+### Desktop Anki
+
+Desktop Anki forgets a card's localStorage (its card view keeps no storage between launches), so on desktop the
+game needs a small add-on, `densha-tabi.ankiaddon` (in the release zip): Tools → Add-ons → Install from file, then
+restart Anki. The add-on keeps the desktop save in the collection, so it syncs between desktop computers through
+AnkiWeb. It's a **separate train** from the phone's (the phone's save stays on the phone), and a card pays once a
+day on each. On a big window the game opens as a phone-sized column over the reviewer; Esc or a click outside
+closes it. Anki's own shortcuts (space, 1–4, …) still work while it's open; answering closes it. Details:
+[DESKTOP.md](DESKTOP.md).
 
 ### Test mode
 
@@ -69,18 +80,21 @@ on that phone, so use it in a test profile only.
 - `densha.js` is the whole game (one dependency-free IIFE). `sh scripts/build.sh` first refreshes its line data
   from `lines.json` (the block between `LINES-DATA:BEGIN/END`; edit `lines.json`, not that block), then copies it to
   `media/_densha.js`. The lines to buy are described in [LINES.md](LINES.md).
-- Tests: `node --test` (Node 20+; `tests/harness.js` is a tiny fake DOM + localStorage running the script in `node:vm`).
+- Tests: `node --test` (Node 20+; `tests/harness.js` is a tiny fake DOM + localStorage running the script in `node:vm`),
+  and `python3 -m unittest tests/addon_test.py` for the desktop add-on (`addon/`, stdlib only; `aqt` is stubbed).
 - Preview: open `preview.html` in a browser (works from `file://`). It stubs `window.ankidroid`, shows a fake card
   back with the slot, and the strip at the top answers N cards (each a new card swap, as in AnkiDroid), sets the
   CardID and moves the day. `?dev=1` adds `data-dev`; `?strip=none` hides the strip;
   `?garden=<url of _garden.js>` puts [Kanpeki Garden](https://github.com/JHerseth/kanpeki-garden) on the same card
-  to check the two games coexist. For the fonts, put copies of `_kleeone-*.ttf` next to it.
+  to check the two games coexist; `?desktop=1` plays desktop Anki with the add-on (no `ankidroid`, the add-on's
+  store and card id defined before each card's script; use a desktop-sized window). For the fonts, put copies of
+  `_kleeone-*.ttf` next to it.
 - Screenshots: `node scripts/shots.mjs [name-filter]` drives headless Chromium at 360×740 (DPR 2) through a set of
   scenes into `out/screens/` (gitignored); `scripts/shot.mjs` takes a single shot of any URL.
 - The sample deck: `anki/` holds its note type (templates, CSS) and notes; `scripts/anki_setup.py --profile NAME`
   creates or updates it in the open Anki profile through AnkiConnect and uploads `_densha.js`.
 - Release zip: `sh scripts/release.sh 1.0.0 [deck.apkg]` builds, runs the tests and writes
-  `dist/densha-tabi-1.0.0.zip`.
+  `dist/densha-tabi-1.0.0.zip` (with `densha-tabi.ankiaddon`, also kept as `dist/densha-tabi-1.0.0.ankiaddon`).
 
 ## Licence
 

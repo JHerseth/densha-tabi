@@ -104,10 +104,20 @@ function page(stored, opts = {}) {
     body.append(slot);
     win.slot = slot;
   }
+  if (opts.width) { win.innerWidth = opts.width; win.innerHeight = opts.height; }
+  win.on = {};
+  win.addEventListener = (t, f) => { (win.on[t] = win.on[t] || []).push(f); };
+  win.removeEventListener = (t, f) => { win.on[t] = (win.on[t] || []).filter((x) => x !== f); };
   vm.createContext(win);
+  if (opts.before) opts.before(win);
   vm.runInContext(SRC, win);
   return win;
 }
+
+/** Run densha.js again in the same page (as desktop Anki and AnkiDroid do for each card's <script>). */
+function rerun(win) { vm.runInContext(SRC, win); }
+/** Run some other code in the page. */
+function run(win, code) { return vm.runInContext(code, win); }
 
 /** Local time ms for y-m-d h:mm (months from 1). */
 function at(y, m, d, h = 12, min = 0) { return new Date(y, m - 1, d, h, min).getTime(); }
@@ -126,4 +136,4 @@ function openGame(win) {
   return win.document.body.find("dt-root")[0];
 }
 
-module.exports = { Node, page, api, card, openGame, at, KEY };
+module.exports = { Node, page, api, card, openGame, at, KEY, rerun, run };

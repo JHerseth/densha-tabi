@@ -20,13 +20,14 @@ paint, extra cars and animal passengers.
 Requirements
 ------------
 - AnkiDroid 2.23 or later, with the NEW study screen turned on.
-  The game only appears in AnkiDroid's study screen. Desktop Anki, the previewer and the card
-  browser show nothing (that's on purpose: the save lives on the phone).
+  The game appears in AnkiDroid's study screen, and on desktop Anki with the small add-on
+  below. The previewer and the card browser never show it.
 - Android 11 or later recommended (for the emoji).
 
 Files in this zip
 -----------------
   _densha.js             the game
+  densha-tabi.ankiaddon  optional add-on for desktop Anki (see "Desktop Anki" below)
   template-snippet.html  the two lines to paste into a card template
   todoufuken.apkg        optional sample deck: Japan's 47 prefectures (94 cards), with the game
                          already set up — the easiest way to try it
@@ -68,6 +69,17 @@ Good to know
 - It can sit on the same card as other card games (it uses its own #densha slot, dt- styles
   and the "densha-tabi" storage key).
 - Updating: replace _densha.js with a newer one and sync. The save is kept.
+
+Desktop Anki (optional)
+-----------------------
+Desktop Anki can't keep the game's save by itself, so it needs the add-on:
+1. In desktop Anki: Tools → Add-ons → Install from file… → choose densha-tabi.ankiaddon.
+2. Restart Anki.
+The game then appears on the back of cards on desktop too. Desktop has its OWN train, separate
+from the phone's: its save is kept in your collection and syncs between desktop computers
+through AnkiWeb (the phone keeps its save on the phone). A card pays once a day on each.
+Click the train button to open the game; Esc or a click outside closes it. Anki's shortcuts
+(space, 1–4) still work while it's open, and answering closes it.
 
 Test mode (for trying things out)
 ---------------------------------

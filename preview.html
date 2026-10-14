@@ -10,11 +10,16 @@
   slot is removed, a new one is added and densha.js runs again. Works from file:// and in headless Chrome.
   URL options: ?dev=1 (data-dev slot), ?strip=0 (strip folded away), ?strip=none (no strip at all),?card=N (first CardID),
   ?garden=URL (another card game on the same card: Kanpeki Garden's _garden.js with its #kg slot, to check they coexist).
+  ?desktop=1: desktop Anki with the add-on instead: no window.ankidroid; before each card's densha.js runs, the page
+  defines DENSHA_DESKTOP and DENSHA_STORE as the add-on's injected script does (the store is kept in this page's own
+  localStorage under "desk:" keys, and pycmd just logs). Use a desktop-sized window, e.g. 1280×800.
 -->
 <style>
   html, body { margin: 0; height: 100%; }
   body { background: #fdfdfb; color: #222; font: 16px/1.5 "Noto Sans JP", sans-serif; }
   .card { padding: 72px 20px 120px; text-align: center; }
+  html.desk body { background: #f5f5f5; }
+  html.desk .card { max-width: 720px; margin: 0 auto; padding-top: 48px; font-size: 20px; }
   .q { font-size: 44px; margin: 10px 0 4px; }
   .a { font-size: 22px; color: #c0392b; }
   hr { border: 0; border-top: 1px solid #ddd; margin: 20px 0; }
@@ -45,7 +50,20 @@
 (function () {
   var q = new URLSearchParams(location.search);
   var DAY = "densha-preview-day", garden = q.get("garden");
-  window.ankidroid = { userAction: function () {} };     // what AnkiDroid's study screen defines
+  var desktop = q.get("desktop") === "1";
+  if (!desktop) window.ankidroid = { userAction: function () {} };     // what AnkiDroid's study screen defines
+  else document.documentElement.classList.add("desk");
+  window.pycmdLog = [];
+  /** Desktop: what the add-on injects before the card's scripts (see addon/inject.js), with a store kept here. */
+  function deskGlobals(id) {
+    window.pycmd = function (m) { window.pycmdLog.push(m); };
+    window.DENSHA_DESKTOP = { v: 1, card: id };
+    window.DENSHA_STORE = {
+      getItem: function (k) { return localStorage.getItem("desk:" + k); },
+      setItem: function (k, v) { localStorage.setItem("desk:" + k, String(v)); window.pycmd("densha:set:" + JSON.stringify([k, String(v), Date.now()])); },
+      removeItem: function (k) { localStorage.removeItem("desk:" + k); window.pycmd("densha:del:" + JSON.stringify([k, Date.now()])); }
+    };
+  }
   /** The day offset (days) the strip moves; DT_CLOCK gives densha.js the moved time. */
   function offset() { return Number(localStorage.getItem(DAY)) || 0; }
   window.DT_CLOCK = function () { return Date.now() + offset() * 864e5; };
@@ -66,6 +84,7 @@
       '</div><div id="densha" data-card="' + id + '"' + (dev.checked ? ' data-dev="1"' : "") + '></div>' +
       (garden ? '<div id="kg" data-kg="garden" data-card="' + id + '"></div>' : "");
     var srcs = ["densha.js"].concat(garden ? [garden] : []);
+    if (desktop) deskGlobals(id);
     (function load(k) {
       if (k >= srcs.length) { if (done) done(); return; }
       var s = document.createElement("script");

@@ -152,6 +152,15 @@ SCENES.push({ name: "zL-412x690-fanfare", save: save2({ line: "enoden", station:
   queue: [{ line: "enoden", lap: 1, station: 14 }] }), run: open + "setTimeout(()=>document.querySelector('.dt-scene').click(),600);" +
   "setTimeout(()=>document.querySelector('.dt-arr').click(),800);setTimeout(()=>document.querySelector('.dt-go:not([hidden])').click(),1200);", wait: 3600, w: 412, h: 690, zoom: 1.3 });
 
+// desktop Anki with the add-on, at 1280×800
+SCENES.push(
+  { name: "D01-desktop-card", desktop: true, save: save({ station: 7, step: 3, seg: 20 }), card: true, run: "", wait: 1500, w: 1280, h: 800 },
+  { name: "D02-desktop-game", desktop: true, save: save({ station: 18, train: { model: "sl", cars: 2 } }), run: open, wait: 1000, w: 1280, h: 800 },
+  { name: "D03-desktop-stamp", desktop: true, save: save({ station: 12, step: 0, queue: [{ lap: 1, station: 12 }] }), run: open, wait: 4200, w: 1280, h: 800 },
+  { name: "D04-desktop-shop", desktop: true, save: save2({ line: "yamanote", station: 5 }), run: open + "setTimeout(()=>" + tapText(".dt-tb", "おみせ").replace(/;$/, "") + ",300);", wait: 900, w: 1280, h: 800 },
+  { name: "D05-desktop-first-card", desktop: true, save: null, run: "", wait: 1500, w: 1280, h: 800 },
+);
+
 const only = process.argv.slice(2);
 const port = 9300 + Math.floor(Math.random() * 500);
 const prof = mkdtempSync(join(process.env.SCRATCH || tmpdir(), "chr-"));

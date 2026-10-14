@@ -8,6 +8,8 @@
  * The slot, at the end of any back template:
  *   <div id="densha" data-card="{{CardID}}"></div>
  *   <script src="_densha.js"></script>
+ * Desktop Anki: with the でんしゃ たび add-on, the reviewer's answer side gets window.DENSHA_DESKTOP and
+ * window.DENSHA_STORE (a localStorage-like store kept in the collection config, so it syncs); see DESKTOP.md.
  * data-dev="1" on the slot adds test controls. It mounts only where ankidroid.userAction exists (AnkiDroid's study
  * screen); the page can be swapped away at any moment, so every change is saved at once.
  *
@@ -18,6 +20,12 @@
   "use strict";
   var g = typeof globalThis !== "undefined" ? globalThis : window;
   var doc = g.document;
+  /** Desktop Anki with the add-on: its store and the card id, taken once as this script runs (the add-on sets them
+   *  just before, on the answer side only). They're removed from window so that the next card's question side,
+   *  which runs in the same page, finds nothing; this script keeps them. */
+  var DESK = g.DENSHA_DESKTOP && g.DENSHA_STORE && typeof g.DENSHA_STORE.getItem === "function"
+    ? { card: g.DENSHA_DESKTOP.card, store: g.DENSHA_STORE } : null;
+  if (DESK) { try { delete g.DENSHA_DESKTOP; delete g.DENSHA_STORE; } catch (e) { /* not removable: keep them */ } }
 
   // ---- data -------------------------------------------------------------------------------------
   var KEY = "densha-tabi", DEV_DAY_KEY = "densha-tabi-dev-day", V = 2;
@@ -297,7 +305,7 @@
   /** The stored dev day offset (read only for a data-dev slot). */
   function devShift() {
     try {
-      var n = Number(g.localStorage.getItem(DEV_DAY_KEY));
+      var n = Number(storage().getItem(DEV_DAY_KEY));
       return Number.isInteger(n) && Math.abs(n) <= 36500 ? n : 0;
     } catch (e) { return 0; }
   }
@@ -352,8 +360,12 @@
     if (nostore) Object.defineProperty(s, "nostore", { value: true });
     return s;
   }
-  /** localStorage, or null where it's missing or blocked. */
-  function storage() { try { return g.localStorage || null; } catch (e) { return null; } }
+  /** Where the save lives: the add-on's store on desktop Anki, else localStorage; null where it's missing or
+   *  blocked. Everything that reads or writes the save goes through this. */
+  function storage() {
+    if (DESK) return DESK.store;
+    try { return g.localStorage || null; } catch (e) { return null; }
+  }
   /** A stored string as a save: fresh if none, mended if damaged in ways that can be mended, locked if it can't
    *  be read (not JSON, not an object, or another v, e.g. from a newer game). */
   function parse(raw) {
@@ -383,7 +395,7 @@
   /** Write the save (never a locked one). Returns the JSON written, or false if it couldn't be stored. */
   function save(s) {
     if (!s || s.locked) return false;
-    try { var j = JSON.stringify(s); g.localStorage.setItem(KEY, j); saveFull = false; return j; }
+    try { var j = JSON.stringify(s); storage().setItem(KEY, j); saveFull = false; return j; }
     catch (e) { saveFull = isQuota(e); return false; }
   }
   /** Whether the last failed save failed because the storage is full (not because it's off or blocked). */
@@ -1403,7 +1415,9 @@
     }
     if (s.nostore) return note();
     var ctx = { s: s, raw: rs.raw, slot: slot, dev: dev, chip: null, game: null, ev: null };
+    // the card id: data-card="{{CardID}}", or on desktop the one the add-on gives (for Anki without {{CardID}})
     var card = data.card;
+    if (!(card != null && /^\d+$/.test(String(card))) && DESK && /^\d+$/.test(String(DESK.card))) card = String(DESK.card);
     if (card != null && /^\d+$/.test(String(card)) && !s.locked) {
       ctx.ev = payCard(s, String(card), today());
       if (ctx.ev) {
@@ -1538,7 +1552,7 @@
     }
     /** Draw the train (model, paint, cars, passengers), scaled for the screen. */
     function renderTrain() {
-      var h = g.innerHeight || 740, w = g.innerWidth || 360;
+      var h = root.clientHeight || g.innerHeight || 740, w = root.clientWidth || g.innerWidth || 360;
       var sc = Math.max(0.72, Math.min(1.25, (w > h && h <= 500 ? h / 420 : h / 620)));
       trainBox.innerHTML = '<div class="dt-train">' + trainHTML(s.train, sc) + "</div>";
       root.classList.toggle("dt-mono", drawn(s.train) === "mono");
@@ -1926,7 +1940,7 @@
       /** Redraw the showroom train, coins and the current tab. */
       function draw() {
         coinTag.innerHTML = "🪙 <b>" + s.coins + "</b>";
-        var u = trainUnits(s.train), w = Math.min(g.innerWidth || 360, 520) - 32;
+        var u = trainUnits(s.train), w = Math.min(root.clientWidth || g.innerWidth || 360, 520) - 32;
         show.innerHTML = '<div class="dt-showtrain"><div class="dt-train">' + trainHTML(s.train, Math.max(0.42, Math.min(0.95, w / u))) + "</div></div>";
         tabBtns.forEach(function (b, i) { b.classList.toggle("dt-on", names[i][0] === cur); });
         area.innerHTML = "";
@@ -2097,7 +2111,7 @@
     }
     function setShift(n) {
       shift = n;
-      try { g.localStorage.setItem(DEV_DAY_KEY, String(n)); } catch (e) { /* blocked: this opening only */ }
+      try { storage().setItem(DEV_DAY_KEY, String(n)); } catch (e) { /* blocked: this opening only */ }
       renderWeek();
     }
 
@@ -2107,8 +2121,11 @@
       timers = [];
       phase = null;
       root.remove();
+      backdrop.remove();
       docEl.classList.remove("dt-open");
       doc.removeEventListener("visibilitychange", vis);
+      doc.removeEventListener("keydown", onKey);
+      if (g.removeEventListener) g.removeEventListener("resize", onResize);
       if (watch) watch.disconnect();
       ctx.game = null;
       renderChip(ctx);
@@ -2116,6 +2133,22 @@
     /** No animation while the page is hidden. */
     function vis() { root.classList.toggle("dt-paused", !!doc.hidden); }
     doc.addEventListener("visibilitychange", vis);
+    // On a big window (desktop Anki, a tablet) the game is a phone-sized column over a dimmed backdrop; clicking the
+    // backdrop closes it. Phones (upright or sideways) keep the full screen.
+    var backdrop = el("div", "dt-backdrop");
+    backdrop.addEventListener("click", function (e) { if (e && e.stopPropagation) e.stopPropagation(); close(); });
+    function wide() { return (g.innerWidth || 0) >= 700 && (g.innerHeight || 0) >= 560; }
+    function layout() { var w = wide(); root.classList.toggle("dt-wide", w); backdrop.hidden = !w; }
+    function onResize() { layout(); renderTrain(); }
+    if (g.addEventListener) g.addEventListener("resize", onResize);
+    /** Esc (desktop): closes the top small box or panel, else the game. Anki's own shortcuts still reach Anki. */
+    function onKey(e) {
+      if (!e || (e.key !== "Escape" && e.key !== "Esc")) return;
+      var kids = root.children, top = kids[kids.length - 1];
+      if (top && (top.classList.contains("dt-modal") || top.classList.contains("dt-panel"))) top.remove();
+      else close();
+    }
+    doc.addEventListener("keydown", onKey);
     // AnkiDroid reads taps and swipes on the page for its own gestures: keep ours inside the game.
     ["touchstart", "touchend", "touchmove", "click"].forEach(function (t) {
       root.addEventListener(t, function (e) { if (e && e.stopPropagation) e.stopPropagation(); }, { passive: true });
@@ -2124,7 +2157,8 @@
     var watch = g.MutationObserver ? new g.MutationObserver(function () { if (!ctx.slot.isConnected) close(); }) : null;
     if (watch) watch.observe(doc.body, { childList: true, subtree: true });
 
-    doc.body.append(root);
+    doc.body.append(backdrop, root);
+    layout();
     syncIn(ctx);
     vis();
     var q0 = pending(s)[0];
@@ -2298,6 +2332,11 @@
     ".dt-bfull{border-top:0;margin-top:2px;padding-top:0;color:#c0700b}",
     // the game
     "html.dt-open,html.dt-open body{overflow:hidden}",
+    // a big window: a phone-sized column, centred, over a dimmed backdrop (clicking it closes the game)
+    ".dt-backdrop{position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147482999;background:rgba(20,24,40,.6);cursor:pointer}",
+    ".dt-backdrop[hidden]{display:none}",
+    ".dt-root.dt-wide{left:50%;right:auto;width:440px;margin-left:-220px;top:16px;bottom:16px;border-radius:26px;",
+    "box-shadow:0 0 0 4px #2b3150,0 24px 70px rgba(0,0,0,.55)}",
     ".dt-root{position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483000;overflow:hidden;background:#cfe9f7;--g:128px;--up1:76px;--up2:30px;font-size:15px;touch-action:manipulation}",
     ".dt-defs-box{position:absolute;width:0;height:0;overflow:hidden}",
     "html body:not(.dt-nobody) .dt-root *::-webkit-scrollbar{display:none;width:0;height:0;background:transparent}",
@@ -2626,8 +2665,9 @@
       LINES: LINES, board: board, activeId: activeId, pending: pending, lineOf: lineOf, migrate: migrate,
       setShift: function (n) { shift = n; } };
   }
-  // On a card: mount into #densha in AnkiDroid's study screen only (it defines ankidroid.userAction; the
+  // On a card: mount into #densha in AnkiDroid's study screen (it defines ankidroid.userAction; the
   // previewer and desktop Anki do not).
   var slot = doc && doc.getElementById("densha");
-  if (slot && g.ankidroid && typeof g.ankidroid.userAction === "function") mount(slot);
+  // or on desktop Anki's answer side with the add-on (DESK); without it desktop shows nothing.
+  if (slot && (DESK || (g.ankidroid && typeof g.ankidroid.userAction === "function"))) mount(slot);
 })();
