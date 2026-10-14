@@ -26,7 +26,9 @@ _TOKENS = re.compile(r"__(DATA|SEQS|CARD|MAX)__")
 
 
 def log(message: str) -> None:
-    print("densha_tabi: " + message, file=sys.stderr)
+    """A line for the console only. Never stderr: Anki's ErrorHandler (aqt/errors.py) takes over sys.stderr and
+    shows its "An error occurred" window for anything written there."""
+    print("densha_tabi: " + message, file=sys.stdout)
 
 
 def script_json(value: Any) -> str:

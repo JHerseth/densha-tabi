@@ -191,7 +191,9 @@ def on_profile_open() -> None:
     """Keep _densha.js up to date in profiles that already use it (never create it, never downgrade)."""
     try:
         if mw.col:
-            log("profile open: " + refresh_script(mw.col, creating=False))
+            what = refresh_script(mw.col, creating=False)
+            if what.startswith("copied"):     # say nothing on an ordinary start
+                log("profile open: " + what)
     except Exception as e:  # noqa: BLE001
         log("couldn't refresh _densha.js: %r" % (e,))
 

@@ -478,3 +478,30 @@ class ApkgVersionTest(unittest.TestCase):
                 z.writestr("0", zstd.compress(b"png"))
                 z.writestr("1", zstd.compress('var DT_VERSION = "2.0.1";'.encode()))
             self.assertEqual(self.m.densha_version(p), "2.0.1")
+
+
+class QuietLogTest(unittest.TestCase):
+    """Anki's ErrorHandler (aqt/errors.py) replaces sys.stderr and opens its "An error occurred" window for anything
+    written there, so the add-on must never write to stderr: not for logging, not on an ordinary profile open."""
+
+    def test_log_goes_to_stdout_only(self):
+        import contextlib, io, re
+        addon, _, _ = load_addon(Col())
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            sys.modules["addon.core"].log("hello")
+        self.assertEqual(err.getvalue(), "")
+        self.assertIn("densha_tabi: hello", out.getvalue())
+
+    def test_no_stderr_writes_in_the_addon(self):
+        import re
+        for name in os.listdir(os.path.join(ROOT, "addon")):
+            if name.endswith(".py"):
+                with open(os.path.join(ROOT, "addon", name), encoding="utf-8") as f:
+                    src = f.read()
+                self.assertIsNone(re.search(r"file\s*=\s*sys\.stderr|sys\.stderr\.write|traceback\.print_", src), name)
+
+    def test_ordinary_profile_open_says_nothing(self):
+        with open(os.path.join(ROOT, "addon", "ui.py"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn('if what.startswith("copied")', src)
